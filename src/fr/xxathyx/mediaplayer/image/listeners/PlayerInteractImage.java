@@ -140,7 +140,7 @@ public class PlayerInteractImage implements Listener {
 							
 					        boolean visible = true;
 					        
-					        if(plugin.getServerVersion().equals("v1_21_R6")  || plugin.getServerVersion().equals("v1_21_R5")  || plugin.getServerVersion().equals("v1_21_R4")  || plugin.getServerVersion().equals("v1_21_R3")  || plugin.getServerVersion().equals("v1_21_R2")  || plugin.getServerVersion().equals("v1_21_R1")  || plugin.getServerVersion().equals("v1_20_R4")  || plugin.getServerVersion().equals("v1_20_R3")  || plugin.getServerVersion().equals("v1_20_R2") || plugin.getServerVersion().equals("v1_20_R1") || plugin.getServerVersion().equals("v1_19_R3") || plugin.getServerVersion().equals("v1_19_R2") || plugin.getServerVersion().equals("v1_19_R1") || plugin.getServerVersion().equals("v1_18_R2") || plugin.getServerVersion().equals("v1_18_R1") ||
+					        if(plugin.getServerVersion().equals("v1_21_R7")  || plugin.getServerVersion().equals("v1_21_R6")  || plugin.getServerVersion().equals("v1_21_R5")  || plugin.getServerVersion().equals("v1_21_R4")  || plugin.getServerVersion().equals("v1_21_R3")  || plugin.getServerVersion().equals("v1_21_R2")  || plugin.getServerVersion().equals("v1_21_R1")  || plugin.getServerVersion().equals("v1_20_R4")  || plugin.getServerVersion().equals("v1_20_R3")  || plugin.getServerVersion().equals("v1_20_R2") || plugin.getServerVersion().equals("v1_20_R1") || plugin.getServerVersion().equals("v1_19_R3") || plugin.getServerVersion().equals("v1_19_R2") || plugin.getServerVersion().equals("v1_19_R1") || plugin.getServerVersion().equals("v1_18_R2") || plugin.getServerVersion().equals("v1_18_R1") ||
 					        		plugin.getServerVersion().equals("v1_17_R1") || plugin.getServerVersion().equals("v1_16_R3") || plugin.getServerVersion().equals("v1_16_R2") ||
 					        		plugin.getServerVersion().equals("v1_16_R1")) {
 					        	visible = configuration.visible_screen_frames_support();
@@ -152,7 +152,7 @@ public class PlayerInteractImage implements Listener {
 									if(plugin.isPaper() && !Bukkit.getBukkitVersion().equals("1.21.10-R0.1-SNAPSHOT")) {
 										((org.bukkit.craftbukkit.v1_21_R5.entity.CraftItemFrame) frames.get(i)).setVisible(visible);
 									}else ((org.bukkit.craftbukkit.v1_21_R6.entity.CraftItemFrame) frames.get(i)).setVisible(visible);
-								}
+								}else if(plugin.getServerVersion().equals("v1_21_R7"))  ((org.bukkit.craftbukkit.v1_21_R7.entity.CraftItemFrame) frames.get(i)).setVisible(visible);
 								if(plugin.getServerVersion().equals("v1_21_R5")) ((org.bukkit.craftbukkit.v1_21_R5.entity.CraftItemFrame) frames.get(i)).setVisible(visible);
 								if(plugin.getServerVersion().equals("v1_21_R4")) ((org.bukkit.craftbukkit.v1_21_R4.entity.CraftItemFrame) frames.get(i)).setVisible(visible);
 								if(plugin.getServerVersion().equals("v1_21_R3")) ((org.bukkit.craftbukkit.v1_21_R3.entity.CraftItemFrame) frames.get(i)).setVisible(visible);
@@ -194,7 +194,7 @@ public class PlayerInteractImage implements Listener {
 												if(plugin.isPaper() && !Bukkit.getBukkitVersion().equals("1.21.10-R0.1-SNAPSHOT")) {
 													((org.bukkit.craftbukkit.v1_21_R5.entity.CraftItemFrame) itemFrame).setVisible(visibles[0]);
 												}else ((org.bukkit.craftbukkit.v1_21_R6.entity.CraftItemFrame) itemFrame).setVisible(visibles[0]);
-											}
+											}else if(plugin.getServerVersion().equals("v1_21_R7")) ((org.bukkit.craftbukkit.v1_21_R7.entity.CraftItemFrame) itemFrame).setVisible(visibles[0]);
 											if(plugin.getServerVersion().equals("v1_21_R5")) ((org.bukkit.craftbukkit.v1_21_R5.entity.CraftItemFrame) itemFrame).setVisible(visibles[0]);
 											if(plugin.getServerVersion().equals("v1_21_R4")) ((org.bukkit.craftbukkit.v1_21_R4.entity.CraftItemFrame) itemFrame).setVisible(visibles[0]);
 											if(plugin.getServerVersion().equals("v1_21_R3")) ((org.bukkit.craftbukkit.v1_21_R3.entity.CraftItemFrame) itemFrame).setVisible(visibles[0]);
