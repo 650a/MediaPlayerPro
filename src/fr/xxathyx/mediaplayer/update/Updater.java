@@ -19,7 +19,7 @@ import fr.xxathyx.mediaplayer.configuration.Configuration;
 * The Updater class, is uses to check for update and update the plugin in the main class,
 * seen {@link Main#onEnable()}.
 *
-* @author  Xxathyx
+* @author  hwic
 * @version 1.0.0
 * @since   2021-08-23 
 */
@@ -78,7 +78,7 @@ public class Updater {
 	        
 			File jar = new File(Main.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath());						
 			@SuppressWarnings("deprecation")
-			URL onlineJar = new URL("https://github.com/Xxathyx/MediaPlayer/releases/download/release/MediaPlayer.jar");
+			URL onlineJar = new URL("https://github.com/hwic/MediaPlayer/releases/download/release/MediaPlayer.jar");
 			
 			long onlineLength = onlineJar.openConnection().getContentLengthLong();
 	        
@@ -97,8 +97,8 @@ public class Updater {
 	* <p> <strong>Note: </strong>For the moment the plugin link will change on every update, because it is stored
 	* on Spigot.
 	* 
-	* <p>The actual link is: <a href="https://www.dropbox.com/s/v1h95zrd5cnken2/MediaPlayer.jar?dl=1">https
-	* :https://www.dropbox.com/s/v1h95zrd5cnken2/MediaPlayer.jar?dl=1</a>.
+	* <p>The actual link is: <a href="https://github.com/hwic/MediaPlayer/releases/download/release/MediaPlayer.jar">https
+	* :https://github.com/hwic/MediaPlayer/releases/download/release/MediaPlayer.jar</a>.
 	* 
 	* The server need to be connected to internet and <a href="https://www.spigotmc.org">https://www.spigotmc.org</a>
 	* have to be responding to the server.
@@ -114,7 +114,7 @@ public class Updater {
 			File newJar = new File(plugin.getDataFolder().getParentFile() + "/update/" + jar.getName());
 						
 			@SuppressWarnings("deprecation")
-			URL onlineJar = new URL("https://github.com/Xxathyx/MediaPlayer/releases/download/release/MediaPlayer.jar");
+			URL onlineJar = new URL("https://github.com/hwic/MediaPlayer/releases/download/release/MediaPlayer.jar");
 			long onlineLength = onlineJar.openConnection().getContentLengthLong();
 						
 			if(onlineLength!=jar.length()) FileUtils.copyURLToFile(onlineJar, newJar);
