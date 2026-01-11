@@ -1,87 +1,37 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>b0x.us</groupId>
   <artifactId>MediaPlayer</artifactId>
   <version>1.0.0-SNAPSHOT</version>
-  <packaging>jar</packaging>
-
   <name>MediaPlayer</name>
+  <packaging>jar</packaging>
 
   <properties>
     <maven.compiler.release>17</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-
-    <!-- Change this to match what you actually want to compile against -->
-    <spigot.version>1.21.5-R0.1-SNAPSHOT</spigot.version>
   </properties>
 
-  <repositories>
-    <repository>
-      <id>spigot-snapshots</id>
-      <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
-    </repository>
-
-    <!-- BKCommonLib (used by your imports like com.bergerkiller.bukkit.common.map.*) -->
-    <repository>
-      <id>mg-dev</id>
-      <url>https://ci.mg-dev.eu/plugin/repository/everything/</url>
-    </repository>
-  </repositories>
-
-  <dependencies>
-    <!-- Spigot API only (does NOT include CraftBukkit/NMS classes) -->
-    <dependency>
-      <groupId>org.spigotmc</groupId>
-      <artifactId>spigot-api</artifactId>
-      <version>${spigot.version}</version>
-      <scope>provided</scope>
-    </dependency>
-
-    <!-- json-simple (you have org.json.simple usage) -->
-    <dependency>
-      <groupId>com.googlecode.json-simple</groupId>
-      <artifactId>json-simple</artifactId>
-      <version>1.1.1</version>
-    </dependency>
-
-    <!-- Netty (you import io.netty.*). Mark provided because the server already provides it -->
-    <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-all</artifactId>
-      <version>4.1.119.Final</version>
-      <scope>provided</scope>
-    </dependency>
-
-    <!-- BKCommonLib (only if you truly need it; otherwise remove the code that imports it) -->
-    <dependency>
-      <groupId>com.bergerkiller.bukkit</groupId>
-      <artifactId>BKCommonLib</artifactId>
-      <version>1.21.5-v1-SNAPSHOT</version>
-      <scope>provided</scope>
-      <optional>true</optional>
-    </dependency>
-  </dependencies>
-
+  <!-- If you KEEP src/fr/... then keep these two lines.
+       If you MOVE to src/main/java, you can delete <build><sourceDirectory>... -->
   <build>
-    <!-- Your sources are in src/fr/... -->
     <sourceDirectory>${project.basedir}/src</sourceDirectory>
 
     <resources>
-      <!-- If you keep plugin.yml at repo root -->
+      <!-- Normal Maven resources folder (if you create it / move plugin.yml here) -->
+      <resource>
+        <directory>${project.basedir}/src/main/resources</directory>
+        <filtering>false</filtering>
+      </resource>
+
+      <!-- Also include plugin.yml from repo root (covers your current layout) -->
       <resource>
         <directory>${project.basedir}</directory>
         <includes>
           <include>plugin.yml</include>
         </includes>
-        <filtering>false</filtering>
-      </resource>
-
-      <!-- If you later move resources into src/main/resources -->
-      <resource>
-        <directory>${project.basedir}/src/main/resources</directory>
         <filtering>false</filtering>
       </resource>
     </resources>
@@ -93,7 +43,6 @@
         <version>3.13.0</version>
         <configuration>
           <release>${maven.compiler.release}</release>
-          <encoding>${project.build.sourceEncoding}</encoding>
         </configuration>
       </plugin>
 
@@ -102,6 +51,7 @@
         <artifactId>maven-jar-plugin</artifactId>
         <version>3.4.2</version>
         <configuration>
+          <!-- Bukkit looks for plugin.yml at the root of the jar -->
           <archive>
             <manifest>
               <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
@@ -111,4 +61,35 @@
       </plugin>
     </plugins>
   </build>
+
+  <repositories>
+    <!-- Paper repo for paper-api -->
+    <repository>
+      <id>papermc</id>
+      <url>https://repo.papermc.io/repository/maven-public/</url>
+    </repository>
+
+    <!-- Spigot snapshots repo (for spigot-api) -->
+    <repository>
+      <id>spigot-snapshots</id>
+      <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
+    </repository>
+  </repositories>
+
+  <dependencies>
+    <!-- Use Paper API (recommended over spigot-api for modern servers) -->
+    <dependency>
+      <groupId>io.papermc.paper</groupId>
+      <artifactId>paper-api</artifactId>
+      <version>1.21.5-R0.1-SNAPSHOT</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- Your log shows org.json.simple missing -->
+    <dependency>
+      <groupId>com.googlecode.json-simple</groupId>
+      <artifactId>json-simple</artifactId>
+      <version>1.1.1</version>
+    </dependency>
+  </dependencies>
 </project>
