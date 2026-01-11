@@ -8,6 +8,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout
@@ -49,3 +51,4 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: dist/MediaPlayer.jar
+          name: ${{ github.ref_name }}
