@@ -5,50 +5,83 @@
 
   <groupId>b0x.us</groupId>
   <artifactId>MediaPlayer</artifactId>
-  <version>1000</version>
+  <version>1.0.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>MediaPlayer</name>
 
   <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.release>17</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+    <!-- Change this to match what you actually want to compile against -->
+    <spigot.version>1.21.5-R0.1-SNAPSHOT</spigot.version>
   </properties>
 
   <repositories>
-    <!-- Spigot snapshots for -SNAPSHOT API coords -->
     <repository>
       <id>spigot-snapshots</id>
       <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
     </repository>
-    <!-- Sonatype (common for misc snapshot deps if any pop up) -->
+
+    <!-- BKCommonLib (used by your imports like com.bergerkiller.bukkit.common.map.*) -->
     <repository>
-      <id>sonatype-oss-snapshots</id>
-      <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+      <id>mg-dev</id>
+      <url>https://ci.mg-dev.eu/plugin/repository/everything/</url>
     </repository>
   </repositories>
 
   <dependencies>
-    <!-- Compile against Spigot API, but don't bundle it -->
+    <!-- Spigot API only (does NOT include CraftBukkit/NMS classes) -->
     <dependency>
       <groupId>org.spigotmc</groupId>
       <artifactId>spigot-api</artifactId>
-      <version>1.21.5-R0.1-SNAPSHOT</version>
+      <version>${spigot.version}</version>
       <scope>provided</scope>
+    </dependency>
+
+    <!-- json-simple (you have org.json.simple usage) -->
+    <dependency>
+      <groupId>com.googlecode.json-simple</groupId>
+      <artifactId>json-simple</artifactId>
+      <version>1.1.1</version>
+    </dependency>
+
+    <!-- Netty (you import io.netty.*). Mark provided because the server already provides it -->
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-all</artifactId>
+      <version>4.1.119.Final</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- BKCommonLib (only if you truly need it; otherwise remove the code that imports it) -->
+    <dependency>
+      <groupId>com.bergerkiller.bukkit</groupId>
+      <artifactId>BKCommonLib</artifactId>
+      <version>1.21.5-v1-SNAPSHOT</version>
+      <scope>provided</scope>
+      <optional>true</optional>
     </dependency>
   </dependencies>
 
   <build>
-    <!-- IMPORTANT: your repo uses src/fr/... not src/main/java -->
+    <!-- Your sources are in src/fr/... -->
     <sourceDirectory>${project.basedir}/src</sourceDirectory>
 
-    <!-- IMPORTANT: include plugin.yml from repo root into the jar root -->
     <resources>
+      <!-- If you keep plugin.yml at repo root -->
       <resource>
         <directory>${project.basedir}</directory>
         <includes>
           <include>plugin.yml</include>
         </includes>
+        <filtering>false</filtering>
+      </resource>
+
+      <!-- If you later move resources into src/main/resources -->
+      <resource>
+        <directory>${project.basedir}/src/main/resources</directory>
         <filtering>false</filtering>
       </resource>
     </resources>
@@ -72,7 +105,6 @@
           <archive>
             <manifest>
               <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-              <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
             </manifest>
           </archive>
         </configuration>
