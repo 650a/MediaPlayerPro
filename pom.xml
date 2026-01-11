@@ -1,1 +1,99 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
 
+  <groupId>b0x.us</groupId>
+  <artifactId>MediaPlayer</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+  <name>MediaPlayer</name>
+  <packaging>jar</packaging>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.release>21</maven.compiler.release>
+
+    <!-- IMPORTANT:
+         Your code imports org.bukkit.craftbukkit.v1_20_R4.*
+         That maps to Minecraft/Spigot 1.20.4.
+    -->
+    <spigot.version>1.20.4-R0.1-SNAPSHOT</spigot.version>
+    <bkcommonlib.version>1.21.1-v1</bkcommonlib.version>
+  </properties>
+
+  <repositories>
+    <!-- BKCommonLib repo (needed so its transitive deps like RegionChangeTracker can resolve) -->
+    <repository>
+      <id>mg-dev</id>
+      <url>https://ci.mg-dev.eu/plugin/repository/everything/</url>
+    </repository>
+  </repositories>
+
+  <dependencies>
+    <!-- This is what provides CraftBukkit (org.bukkit.craftbukkit.*), NMS (net.minecraft.*), and Netty (io.netty.*) at compile time -->
+    <dependency>
+      <groupId>org.spigotmc</groupId>
+      <artifactId>spigot</artifactId>
+      <version>${spigot.version}</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- If your plugin uses Bukkit API types explicitly, this is nice to keep too (still provided at runtime) -->
+    <dependency>
+      <groupId>org.spigotmc</groupId>
+      <artifactId>spigot-api</artifactId>
+      <version>${spigot.version}</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- Optional (only if your code imports it). Keep provided so it’s not shaded into your jar. -->
+    <dependency>
+      <groupId>com.bergerkiller.bukkit</groupId>
+      <artifactId>BKCommonLib</artifactId>
+      <version>${bkcommonlib.version}</version>
+      <scope>provided</scope>
+      <optional>true</optional>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <!-- Your sources are NOT in src/main/java; they are in src/fr/... -->
+    <sourceDirectory>src</sourceDirectory>
+
+    <resources>
+      <!-- Your plugin.yml is in the repo root, not under src/main/resources -->
+      <resource>
+        <directory>.</directory>
+        <includes>
+          <include>plugin.yml</include>
+        </includes>
+      </resource>
+    </resources>
+
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.13.0</version>
+        <configuration>
+          <release>${maven.compiler.release}</release>
+          <encoding>${project.build.sourceEncoding}</encoding>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.4.2</version>
+        <configuration>
+          <archive>
+            <manifest>
+              <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+              <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+            </manifest>
+          </archive>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>
