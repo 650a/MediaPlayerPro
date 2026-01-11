@@ -1,38 +1,99 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>b0x.us</groupId>
   <artifactId>MediaPlayer</artifactId>
   <version>1.0.0-SNAPSHOT</version>
-  <name>MediaPlayer</name>
   <packaging>jar</packaging>
+  <name>MediaPlayer</name>
 
   <properties>
-    <maven.compiler.release>17</maven.compiler.release>
+    <!-- Paper 1.20.5+ requires Java 21 -->
+    <maven.compiler.release>21</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+    <!-- Your code imports org.bukkit.craftbukkit.v1_20_R4.* (1.20.5/1.20.6 era) -->
+    <paper.version>1.20.6-R0.1-SNAPSHOT</paper.version>
+
+    <!-- Match whatever BKCommonLib jar you download/install in the workflow -->
+    <bkcommonlib.version>1.21.1-v1</bkcommonlib.version>
+    <netty.version>4.1.119.Final</netty.version>
   </properties>
 
-  <!-- If you KEEP src/fr/... then keep these two lines.
-       If you MOVE to src/main/java, you can delete <build><sourceDirectory>... -->
+  <repositories>
+    <!-- Paper / Paper-API / Paper-Server -->
+    <repository>
+      <id>papermc</id>
+      <url>https://repo.papermc.io/repository/maven-public/</url>
+    </repository>
+  </repositories>
+
+  <dependencies>
+    <!-- Bukkit API (provided by the server at runtime) -->
+    <dependency>
+      <groupId>io.papermc.paper</groupId>
+      <artifactId>paper-api</artifactId>
+      <version>${paper.version}</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- Server classes (CraftBukkit + NMS) for compiling your v1_20_R4 imports -->
+    <dependency>
+      <groupId>io.papermc.paper</groupId>
+      <artifactId>paper-server</artifactId>
+      <version>${paper.version}</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- BKCommonLib (you’ll install this into the CI maven-local in the workflow) -->
+    <dependency>
+      <groupId>com.bergerkiller.bukkit</groupId>
+      <artifactId>BKCommonLib</artifactId>
+      <version>${bkcommonlib.version}</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- Netty (your code imports io.netty.channel.* / io.netty.buffer.*) -->
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-all</artifactId>
+      <version>${netty.version}</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- json-simple (your code imports org.json.simple.*) -->
+    <dependency>
+      <groupId>com.googlecode.json-simple</groupId>
+      <artifactId>json-simple</artifactId>
+      <version>1.1.1</version>
+    </dependency>
+  </dependencies>
+
   <build>
-    <sourceDirectory>${project.basedir}/src</sourceDirectory>
+    <!-- Your sources are under src/fr/... (not src/main/java) -->
+    <sourceDirectory>src</sourceDirectory>
 
     <resources>
-      <!-- Normal Maven resources folder (if you create it / move plugin.yml here) -->
-      <resource>
-        <directory>${project.basedir}/src/main/resources</directory>
-        <filtering>false</filtering>
-      </resource>
-
-      <!-- Also include plugin.yml from repo root (covers your current layout) -->
+      <!-- Include plugin.yml from repo root into the JAR root -->
       <resource>
         <directory>${project.basedir}</directory>
         <includes>
           <include>plugin.yml</include>
         </includes>
-        <filtering>false</filtering>
+      </resource>
+      <!-- Also include any resource files you may have under src/ (optional) -->
+      <resource>
+        <directory>src</directory>
+        <includes>
+          <include>**/*.yml</include>
+          <include>**/*.json</include>
+          <include>**/*.txt</include>
+          <include>**/*.png</include>
+          <include>**/*.jpg</include>
+          <include>**/*.properties</include>
+        </includes>
       </resource>
     </resources>
 
@@ -43,6 +104,7 @@
         <version>3.13.0</version>
         <configuration>
           <release>${maven.compiler.release}</release>
+          <encoding>${project.build.sourceEncoding}</encoding>
         </configuration>
       </plugin>
 
@@ -51,45 +113,14 @@
         <artifactId>maven-jar-plugin</artifactId>
         <version>3.4.2</version>
         <configuration>
-          <!-- Bukkit looks for plugin.yml at the root of the jar -->
           <archive>
             <manifest>
               <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+              <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
             </manifest>
           </archive>
         </configuration>
       </plugin>
     </plugins>
   </build>
-
-  <repositories>
-    <!-- Paper repo for paper-api -->
-    <repository>
-      <id>papermc</id>
-      <url>https://repo.papermc.io/repository/maven-public/</url>
-    </repository>
-
-    <!-- Spigot snapshots repo (for spigot-api) -->
-    <repository>
-      <id>spigot-snapshots</id>
-      <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
-    </repository>
-  </repositories>
-
-  <dependencies>
-    <!-- Use Paper API (recommended over spigot-api for modern servers) -->
-    <dependency>
-      <groupId>io.papermc.paper</groupId>
-      <artifactId>paper-api</artifactId>
-      <version>1.21.5-R0.1-SNAPSHOT</version>
-      <scope>provided</scope>
-    </dependency>
-
-    <!-- Your log shows org.json.simple missing -->
-    <dependency>
-      <groupId>com.googlecode.json-simple</groupId>
-      <artifactId>json-simple</artifactId>
-      <version>1.1.1</version>
-    </dependency>
-  </dependencies>
 </project>
