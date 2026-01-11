@@ -1,4 +1,4 @@
-name: Build JAR
+name: build
 
 on:
   push:
@@ -12,23 +12,36 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Java
+      - name: Set up Java 21
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: "21"
           cache: maven
 
-      - name: Build with Maven
-        run: mvn -B -DskipTests clean package
+      # BKCommonLib is not reliably available from Maven Central.
+      # This installs a known jar into the runner’s local maven repo.
+      - name: Download BKCommonLib jar
+        run: |
+          mkdir -p libs
+          # Modrinth direct file URL (version page shows the file name and version)
+          # If you want a different BKCommonLib version, swap this URL AND update bkcommonlib.version in pom.xml
+          curl -L -o libs/BKCommonLib.jar "https://cdn.modrinth.com/data/rTg6ckWb/versions/AZ67CsiD/BKCommonLib-1.21.1-v1-1795.jar"
 
-      - name: List built jars
-        run: ls -lah target || true
+      - name: Install BKCommonLib into local Maven repo
+        run: |
+          mvn -B -q install:install-file \
+            -Dfile="libs/BKCommonLib.jar" \
+            -DgroupId="com.bergerkiller.bukkit" \
+            -DartifactId="BKCommonLib" \
+            -Dversion="1.21.1-v1" \
+            -Dpackaging="jar"
+
+      - name: Build with Maven
+        run: mvn -B -DskipTests package
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: MediaPlayer-JAR
-          path: |
-            target/*.jar
-          if-no-files-found: error
+          name: MediaPlayer-jar
+          path: target/*.jar
