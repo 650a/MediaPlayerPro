@@ -25,6 +25,7 @@ public class Server {
     private int port = getRandomNumber(1000, 8000);
     private String arg = "";
     private boolean secure = false;
+    private String externalUrl = null;
     	
     public Server(File file) {
     	Server.file=file;
@@ -37,25 +38,37 @@ public class Server {
     	if(!configuration.plugin_alternative_server().equals("http://54.38.185.225/")
     			&& !configuration.plugin_alternative_server().equals("none")) {
     		
-    		String[] elements = configuration.plugin_alternative_server().split("&");
+    		String alternative = configuration.plugin_alternative_server().trim();
+    		if(alternative.startsWith("http://") || alternative.startsWith("https://")) {
+    			externalUrl = alternative;
+    			return true;
+    		}
+    		
+    		String[] elements = alternative.split("&");
     		
     		if(elements.length > 0) {
     			
-        		arg = elements[1];
+        		if(elements.length > 1) {
+        			arg = elements[1];
+        		}
         		
     			String[] inner = elements[0].split(":");
     			
         		ip = inner[0];
-        		port = Integer.parseInt(inner[1]);
+        		if(inner.length > 1) {
+        			port = Integer.parseInt(inner[1]);
+        		}
     			
         		if(elements.length > 2) secure = elements[2].equals("s");
         		
     		}else {
     			
-    			elements = configuration.plugin_alternative_server().split(":");
+    			elements = alternative.split(":");
     			
         		ip = elements[0];
-        		port = Integer.parseInt(elements[1]);
+        		if(elements.length > 1) {
+        			port = Integer.parseInt(elements[1]);
+        		}
     		}    		
     	}
     	
@@ -98,6 +111,7 @@ public class Server {
     }
     
     public String url() {
+    	if(externalUrl != null) return externalUrl;
     	return "http" + (secure ? "s" : "") +"://"+ip+":"+port+"/"+arg;
     }
     
