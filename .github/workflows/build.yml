@@ -3,28 +3,25 @@ name: Build JAR
 on:
   push:
   pull_request:
-  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Java 17
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: 17
           cache: maven
 
-      - name: Build with Maven
-        run: mvn -B -e -DskipTests package
+      - name: Build
+        run: mvn -B -DskipTests package
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: MediaPlayer-JAR
+          name: MediaPlayer
           path: target/*.jar
