@@ -174,6 +174,8 @@ public class TaskAsyncLoadVideo extends BukkitRunnable {
 	            		}catch (IOException e) {
 	            			e.printStackTrace();
 	            		}
+	            		File initialAudio = new File(video.getAudioFolder(), "0.ogg");
+	            		File fixedAudio = new File(video.getAudioFolder(), "0-fixed.ogg");
 	            		String[] audioCommand = {FilenameUtils.separatorsToUnix(plugin.getFfmpeg().getLibraryFile().getAbsolutePath()),
 	            				"-hide_banner",
 	            				"-loglevel", "error",
@@ -182,7 +184,7 @@ public class TaskAsyncLoadVideo extends BukkitRunnable {
 	            				"-ar", "48000",
 	            				"-c:a", "libvorbis",
 	            				"-f", "ogg",
-	            				"-vn", FilenameUtils.separatorsToUnix(new File(video.getAudioFolder(), "0.ogg").getAbsolutePath())};
+	            				"-vn", FilenameUtils.separatorsToUnix(initialAudio.getAbsolutePath())};
 	                	
 	                    ProcessBuilder audioProcessBuilder = new ProcessBuilder(audioCommand);
 	    	            Bukkit.getLogger().info(Arrays.toString(audioCommand).replace(",", ""));
@@ -193,6 +195,38 @@ public class TaskAsyncLoadVideo extends BukkitRunnable {
 	            			process.waitFor();
 	            		}catch (IOException | InterruptedException e) {
 	            			e.printStackTrace();
+	            		}
+
+	            		if(initialAudio.exists()) {
+	            			String[] fixCommand = {FilenameUtils.separatorsToUnix(plugin.getFfmpeg().getLibraryFile().getAbsolutePath()),
+	            				"-hide_banner",
+	            				"-loglevel", "error",
+	            				"-y",
+	            				"-i", FilenameUtils.separatorsToUnix(initialAudio.getAbsolutePath()),
+	            				"-ac", "2",
+	            				"-ar", "48000",
+	            				"-c:a", "libvorbis",
+	            				FilenameUtils.separatorsToUnix(fixedAudio.getAbsolutePath())};
+
+	            			ProcessBuilder fixProcessBuilder = new ProcessBuilder(fixCommand);
+	            			Bukkit.getLogger().info(Arrays.toString(fixCommand).replace(",", ""));
+
+	            			try {
+	            				Process fixProcess = fixProcessBuilder.inheritIO().start();
+	            				plugin.getProcess().add(fixProcess);
+	            				fixProcess.waitFor();
+	            			}catch (IOException | InterruptedException e) {
+	            				e.printStackTrace();
+	            			}
+
+	            			if(fixedAudio.exists()) {
+	            				if(!initialAudio.delete()) {
+	            					Bukkit.getLogger().warning("[MediaPlayer]: Failed to remove initial audio file before replacing.");
+	            				}
+	            				if(!fixedAudio.renameTo(initialAudio)) {
+	            					Bukkit.getLogger().warning("[MediaPlayer]: Failed to replace audio file with fixed version.");
+	            				}
+	            			}
 	            		}
 	                    new ResourcePack().create(video);
 	            	}
