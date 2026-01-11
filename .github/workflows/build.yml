@@ -7,36 +7,86 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Package JAR from existing classes
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # 1) Download Spigot API automatically (so org.bukkit.* resolves)
+      - name: Fetch Spigot API (via Maven)
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -y
+          sudo apt-get install -y maven
+
+          # You can change this version if needed.
+          SPIGOT_API="org.spigotmc:spigot-api:1.20.4-R0.1-SNAPSHOT"
+
+          # Use PaperMC public repo (works well for snapshots)
+          mvn -q -DrepoUrl=https://repo.papermc.io/repository/maven-public/ \
+              -Dartifact="$SPIGOT_API" \
+              dependency:get
+
+          # Find the downloaded jar in ~/.m2 and expose it as an env var
+          API_JAR="$(ls -1 ~/.m2/repository/org/spigotmc/spigot-api/**/spigot-api-*.jar | sort | tail -n 1)"
+          echo "SPIGOT_API_JAR=$API_JAR" >> "$GITHUB_ENV"
+          echo "Using API jar: $API_JAR"
+
+      # 2) Compile your sources
+      - name: Compile
         shell: bash
         run: |
           set -euo pipefail
 
-          # Sanity checks
-          test -f plugin.yml
-          test -d bin
-
-          # Ensure bin actually contains compiled .class files
-          if ! find bin -type f -name "*.class" | head -n 1 | grep -q .; then
-            echo "bin/ does not contain any .class files. Can't package."
+          if [ ! -f plugin.yml ]; then
+            echo "plugin.yml not found at repo root (required)."
+            ls -lah
             exit 1
           fi
 
-          mkdir -p build
-          cp plugin.yml bin/plugin.yml
+          mkdir -p build/classes
 
-          # Create jar (contents = bin/*)
-          (cd bin && jar --create --file ../build/MediaPlayer.jar .)
+          # Source roots that exist in this repo
+          roots=()
+          for d in src com org net dev; do
+            if [ -d "$d" ]; then roots+=("$d"); fi
+          done
+          echo "Source roots: ${roots[*]}"
 
-          echo "Built:"
-          ls -lah build/MediaPlayer.jar
+          mapfile -t sources < <(find "${roots[@]}" -type f -name "*.java" 2>/dev/null || true)
+          echo "Java file count: ${#sources[@]}"
+          if [ "${#sources[@]}" -eq 0 ]; then
+            echo "No .java files found under: ${roots[*]}"
+            exit 1
+          fi
+
+          # Compile targeting Java 8 bytecode for broad MC compatibility
+          javac --release 8 -encoding UTF-8 \
+            -cp "$SPIGOT_API_JAR" \
+            -d build/classes \
+            "${sources[@]}"
+
+          # Include plugin.yml in jar root
+          cp plugin.yml build/classes/plugin.yml
+
+      # 3) Package jar
+      - name: Package JAR
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/out
+          jar --create --file build/out/MediaPlayer.jar -C build/classes .
+          ls -lah build/out/MediaPlayer.jar
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: MediaPlayer-jar
-          path: build/MediaPlayer.jar
+          path: build/out/MediaPlayer.jar
