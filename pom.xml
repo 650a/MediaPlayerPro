@@ -1,157 +1,81 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>fr.xxathyx</groupId>
+  <groupId>b0x.us</groupId>
   <artifactId>MediaPlayer</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
-  <name>MediaPlayer</name>
+  <version>1000</version>
   <packaging>jar</packaging>
 
+  <name>MediaPlayer</name>
+
   <properties>
-    <maven.compiler.release>17</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.release>17</maven.compiler.release>
   </properties>
 
   <repositories>
+    <!-- Spigot snapshots for -SNAPSHOT API coords -->
     <repository>
-      <id>papermc</id>
-      <url>https://repo.papermc.io/repository/maven-public/</url>
+      <id>spigot-snapshots</id>
+      <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
     </repository>
-
-    <!-- BKCommonLib / Mountiplex -->
+    <!-- Sonatype (common for misc snapshot deps if any pop up) -->
     <repository>
-      <id>mg-dev</id>
-      <url>https://ci.mg-dev.eu/plugin/repository/everything/</url>
+      <id>sonatype-oss-snapshots</id>
+      <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
     </repository>
   </repositories>
 
   <dependencies>
-    <!-- Paper API -->
+    <!-- Compile against Spigot API, but don't bundle it -->
     <dependency>
-      <groupId>io.papermc.paper</groupId>
-      <artifactId>paper-api</artifactId>
-      <version>1.20.4-R0.1-SNAPSHOT</version>
-      <scope>provided</scope>
-    </dependency>
-
-    <!-- BKCommonLib (plugin dependency, don't shade into your jar) -->
-    <dependency>
-      <groupId>com.bergerkiller.bukkit</groupId>
-      <artifactId>BKCommonLib</artifactId>
-      <version>1.20.4-v1</version>
-      <scope>provided</scope>
-    </dependency>
-
-    <!-- Your libraries (these SHOULD be shaded to avoid missing-dep issues) -->
-    <dependency>
-      <groupId>commons-io</groupId>
-      <artifactId>commons-io</artifactId>
-      <version>2.15.1</version>
-    </dependency>
-
-    <dependency>
-      <groupId>commons-lang</groupId>
-      <artifactId>commons-lang</artifactId>
-      <version>2.6</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
-      <version>3.14.0</version>
-    </dependency>
-
-    <dependency>
-      <groupId>com.google.code.gson</groupId>
-      <artifactId>gson</artifactId>
-      <version>2.10.1</version>
-    </dependency>
-
-    <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-      <version>33.0.0-jre</version>
-    </dependency>
-
-    <dependency>
-      <groupId>net.bramp.ffmpeg</groupId>
-      <artifactId>ffmpeg</artifactId>
-      <version>0.8.0</version>
-    </dependency>
-
-    <!-- IMPORTANT: do NOT bundle netty-all into Paper plugins (Paper already has Netty) -->
-    <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-all</artifactId>
-      <version>4.1.107.Final</version>
-      <scope>provided</scope>
-    </dependency>
-
-    <!-- Usually unnecessary on Paper; keep provided if code uses it -->
-    <dependency>
-      <groupId>net.md-5</groupId>
-      <artifactId>bungeecord-chat</artifactId>
-      <version>1.20-R0.2</version>
+      <groupId>org.spigotmc</groupId>
+      <artifactId>spigot-api</artifactId>
+      <version>1.21.5-R0.1-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>
 
   <build>
+    <!-- IMPORTANT: your repo uses src/fr/... not src/main/java -->
+    <sourceDirectory>${project.basedir}/src</sourceDirectory>
+
+    <!-- IMPORTANT: include plugin.yml from repo root into the jar root -->
+    <resources>
+      <resource>
+        <directory>${project.basedir}</directory>
+        <includes>
+          <include>plugin.yml</include>
+        </includes>
+        <filtering>false</filtering>
+      </resource>
+    </resources>
+
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.12.1</version>
+        <version>3.13.0</version>
         <configuration>
           <release>${maven.compiler.release}</release>
+          <encoding>${project.build.sourceEncoding}</encoding>
         </configuration>
       </plugin>
 
-      <!-- Shade your bundled libs (NOT Paper, NOT BKCommonLib, NOT Netty) -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-shade-plugin</artifactId>
-        <version>3.6.0</version>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals><goal>shade</goal></goals>
-            <configuration>
-              <createDependencyReducedPom>false</createDependencyReducedPom>
-
-              <artifactSet>
-                <excludes>
-                  <exclude>io.papermc.paper:paper-api</exclude>
-                  <exclude>com.bergerkiller.bukkit:BKCommonLib</exclude>
-                  <exclude>io.netty:netty-all</exclude>
-                  <exclude>net.md-5:bungeecord-chat</exclude>
-                </excludes>
-              </artifactSet>
-
-              <!-- Avoid classpath conflicts with server-provided libs -->
-              <relocations>
-                <relocation>
-                  <pattern>com.google.common</pattern>
-                  <shadedPattern>fr.xxathyx.mediaplayer.libs.guava</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>com.google.gson</pattern>
-                  <shadedPattern>fr.xxathyx.mediaplayer.libs.gson</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>org.apache.commons</pattern>
-                  <shadedPattern>fr.xxathyx.mediaplayer.libs.apachecommons</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>net.bramp.ffmpeg</pattern>
-                  <shadedPattern>fr.xxathyx.mediaplayer.libs.ffmpeg</shadedPattern>
-                </relocation>
-              </relocations>
-            </configuration>
-          </execution>
-        </executions>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.4.2</version>
+        <configuration>
+          <archive>
+            <manifest>
+              <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+              <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+            </manifest>
+          </archive>
+        </configuration>
       </plugin>
     </plugins>
   </build>
