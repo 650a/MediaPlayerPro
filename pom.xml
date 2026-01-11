@@ -1,127 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 
-  <modelVersion>4.0.0</modelVersion>
+    <modelVersion>4.0.0</modelVersion>
 
-  <groupId>b0x.us</groupId>
-  <artifactId>MediaPlayer</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
-  <packaging>jar</packaging>
-  <name>MediaPlayer</name>
+    <groupId>b0x.us</groupId>
+    <artifactId>MediaPlayer</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
 
-  <properties>
-    <!-- Paper 1.20.5+ / 1.21+ REQUIRES Java 21 -->
-    <maven.compiler.release>21</maven.compiler.release>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <name>MediaPlayer</name>
 
-    <!-- Your source imports org.bukkit.craftbukkit.v1_20_R4 -->
-    <paper.version>1.20.6-R0.1-SNAPSHOT</paper.version>
-  </properties>
+    <properties>
+        <java.version>21</java.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-  <repositories>
-    <repository>
-      <id>papermc</id>
-      <url>https://repo.papermc.io/repository/maven-public/</url>
-    </repository>
-  </repositories>
+        <!-- Keep these aligned with what you actually run on your server -->
+        <paper.version>1.21.1-R0.1-SNAPSHOT</paper.version>
 
-  <dependencies>
-    <!-- Bukkit / Paper API -->
-    <dependency>
-      <groupId>io.papermc.paper</groupId>
-      <artifactId>paper-api</artifactId>
-      <version>${paper.version}</version>
-      <scope>provided</scope>
-    </dependency>
+        <!-- BKCommonLib version you were trying to use -->
+        <bkcommonlib.version>1.21.1-v1</bkcommonlib.version>
+    </properties>
 
-    <!-- CraftBukkit + NMS (REQUIRED because your code imports them directly) -->
-    <dependency>
-      <groupId>io.papermc.paper</groupId>
-      <artifactId>paper-server</artifactId>
-      <version>${paper.version}</version>
-      <scope>provided</scope>
-    </dependency>
+    <repositories>
+        <!-- PaperMC repo for paper-api -->
+        <repository>
+            <id>papermc</id>
+            <url>https://repo.papermc.io/repository/maven-public/</url>
+        </repository>
 
-    <!-- BKCommonLib (installed locally in GitHub Actions; NO transitive deps) -->
-    <dependency>
-      <groupId>com.bergerkiller.bukkit</groupId>
-      <artifactId>BKCommonLib</artifactId>
-      <version>1.21.1-v1</version>
-      <scope>provided</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>*</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
+        <!-- Bergerkiller / MG-dev repo (required for BKCommonLib + RegionChangeTracker) -->
+        <repository>
+            <id>mg-dev</id>
+            <url>https://ci.mg-dev.eu/plugin/repository/everything/</url>
+        </repository>
 
-    <!-- Netty (compile only; server provides it at runtime) -->
-    <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-all</artifactId>
-      <version>4.1.119.Final</version>
-      <scope>provided</scope>
-    </dependency>
+        <!-- Maven Central fallback -->
+        <repository>
+            <id>central</id>
+            <url>https://repo.maven.apache.org/maven2</url>
+        </repository>
+    </repositories>
 
-    <!-- json-simple -->
-    <dependency>
-      <groupId>com.googlecode.json-simple</groupId>
-      <artifactId>json-simple</artifactId>
-      <version>1.1.1</version>
-    </dependency>
-  </dependencies>
+    <dependencies>
+        <!-- Paper API only (DO NOT depend on paper-server) -->
+        <dependency>
+            <groupId>io.papermc.paper</groupId>
+            <artifactId>paper-api</artifactId>
+            <version>${paper.version}</version>
+            <scope>provided</scope>
+        </dependency>
 
-  <build>
-    <!-- YOUR REPO USES src/fr/... -->
-    <sourceDirectory>src</sourceDirectory>
+        <!-- BKCommonLib (provided at runtime by installing it as a plugin) -->
+        <dependency>
+            <groupId>com.bergerkiller.bukkit</groupId>
+            <artifactId>BKCommonLib</artifactId>
+            <version>${bkcommonlib.version}</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
 
-    <resources>
-      <!-- FORCE plugin.yml INTO JAR ROOT -->
-      <resource>
-        <directory>${project.basedir}</directory>
-        <includes>
-          <include>plugin.yml</include>
-        </includes>
-      </resource>
+    <build>
+        <!-- Your project uses src/fr instead of src/main/java -->
+        <sourceDirectory>src/fr</sourceDirectory>
 
-      <!-- Optional: include any assets under src/ -->
-      <resource>
-        <directory>src</directory>
-        <includes>
-          <include>**/*.yml</include>
-          <include>**/*.json</include>
-          <include>**/*.png</include>
-          <include>**/*.jpg</include>
-        </includes>
-      </resource>
-    </resources>
+        <resources>
+            <!-- Put plugin.yml (sitting next to pom.xml) into the jar root -->
+            <resource>
+                <directory>${project.basedir}</directory>
+                <includes>
+                    <include>plugin.yml</include>
+                    <!-- include other root resources if you have them -->
+                    <include>config.yml</include>
+                    <include>*.yml</include>
+                </includes>
+            </resource>
 
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.13.0</version>
-        <configuration>
-          <release>${maven.compiler.release}</release>
-          <encoding>${project.build.sourceEncoding}</encoding>
-        </configuration>
-      </plugin>
+            <!-- If you also have any resources under src/fr, keep them too -->
+            <resource>
+                <directory>src/fr</directory>
+                <filtering>false</filtering>
+            </resource>
+        </resources>
 
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>3.4.2</version>
-        <configuration>
-          <archive>
-            <manifest>
-              <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-            </manifest>
-          </archive>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <release>${java.version}</release>
+                    <encoding>${project.build.sourceEncoding}</encoding>
+                </configuration>
+            </plugin>
+
+            <!-- Ensures jar is created normally -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.4.2</version>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>
