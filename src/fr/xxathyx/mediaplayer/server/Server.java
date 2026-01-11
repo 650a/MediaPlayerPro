@@ -35,7 +35,8 @@ public class Server {
 	    	
 	    	ip = plugin.getServer().getIp(); if (ip == null || ip.equals("")) ip = "localhost";
 	    	
-	    	String alternative = configuration.plugin_alternative_server().trim();
+	    	String alternativeValue = configuration.plugin_alternative_server();
+	    	String alternative = alternativeValue == null ? "" : alternativeValue.trim();
 	    	if(!alternative.equals("http://54.38.185.225/") && !alternative.equals("none")) {
 	    		
 	    		if(alternative.isEmpty()) {
