@@ -1,4 +1,4 @@
-name: Build JAR
+name: Build JAR (Paper 1.20.4)
 
 on:
   push:
@@ -18,65 +18,139 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      # 1) Download Spigot API automatically (so org.bukkit.* resolves)
-      - name: Fetch Spigot API (via Maven)
-        shell: bash
+      - name: Install tools
         run: |
-          set -euo pipefail
           sudo apt-get update -y
-          sudo apt-get install -y maven
+          sudo apt-get install -y jq maven
 
-          # You can change this version if needed.
-          SPIGOT_API="org.spigotmc:spigot-api:1.20.4-R0.1-SNAPSHOT"
+      # --- 1) Download latest Paper server jar for 1.20.4 (contains CraftBukkit + NMS packages) ---
+      - name: Download Paper server jar
+        shell: bash
+        run: |
+          set -euo pipefail
+          MC_VERSION="1.20.4"
 
-          # Use PaperMC public repo (works well for snapshots)
-          mvn -q -DrepoUrl=https://repo.papermc.io/repository/maven-public/ \
-              -Dartifact="$SPIGOT_API" \
-              dependency:get
+          BUILDS_JSON="$(curl -s "https://api.papermc.io/v2/projects/paper/versions/${MC_VERSION}/builds")"
+          LATEST_BUILD="$(echo "$BUILDS_JSON" | jq -r '.builds[-1].build')"
+          JAR_NAME="$(echo "$BUILDS_JSON" | jq -r '.builds[-1].downloads.application.name')"
 
-          # Find the downloaded jar in ~/.m2 and expose it as an env var
-          API_JAR="$(ls -1 ~/.m2/repository/org/spigotmc/spigot-api/**/spigot-api-*.jar | sort | tail -n 1)"
-          echo "SPIGOT_API_JAR=$API_JAR" >> "$GITHUB_ENV"
-          echo "Using API jar: $API_JAR"
+          echo "Latest build: $LATEST_BUILD"
+          echo "Jar name: $JAR_NAME"
 
-      # 2) Compile your sources
-      - name: Compile
+          mkdir -p build/deps
+          curl -L -o "build/deps/paper.jar" \
+            "https://api.papermc.io/v2/projects/paper/versions/${MC_VERSION}/builds/${LATEST_BUILD}/downloads/${JAR_NAME}"
+
+          ls -lah build/deps/paper.jar
+
+      # --- 2) Download required libraries (Maven Central) ---
+      - name: Download library deps
         shell: bash
         run: |
           set -euo pipefail
 
-          if [ ! -f plugin.yml ]; then
-            echo "plugin.yml not found at repo root (required)."
-            ls -lah
+          # Maven Central deps
+          mvn -q -Dartifact=commons-io:commons-io:2.15.1 dependency:get
+          mvn -q -Dartifact=commons-lang:commons-lang:2.6 dependency:get
+          mvn -q -Dartifact=org.apache.commons:commons-lang3:3.14.0 dependency:get
+          mvn -q -Dartifact=com.google.code.gson:gson:2.10.1 dependency:get
+          mvn -q -Dartifact=com.google.guava:guava:33.0.0-jre dependency:get
+          mvn -q -Dartifact=net.bramp.ffmpeg:ffmpeg:0.8.0 dependency:get
+          mvn -q -Dartifact=io.netty:netty-all:4.1.107.Final dependency:get
+          mvn -q -Dartifact=net.md-5:bungeecord-chat:1.20-R0.2 dependency:get
+
+          # Resolve jar paths
+          JARS=()
+          JARS+=("$(ls -1 ~/.m2/repository/commons-io/commons-io/*/commons-io-*.jar | tail -n 1)")
+          JARS+=("$(ls -1 ~/.m2/repository/commons-lang/commons-lang/*/commons-lang-*.jar | tail -n 1)")
+          JARS+=("$(ls -1 ~/.m2/repository/org/apache/commons/commons-lang3/*/commons-lang3-*.jar | tail -n 1)")
+          JARS+=("$(ls -1 ~/.m2/repository/com/google/code/gson/gson/*/gson-*.jar | tail -n 1)")
+          JARS+=("$(ls -1 ~/.m2/repository/com/google/guava/guava/*/guava-*.jar | tail -n 1)")
+          JARS+=("$(ls -1 ~/.m2/repository/net/bramp/ffmpeg/ffmpeg/*/ffmpeg-*.jar | tail -n 1)")
+          JARS+=("$(ls -1 ~/.m2/repository/io/netty/netty-all/*/netty-all-*.jar | tail -n 1)")
+          JARS+=("$(ls -1 ~/.m2/repository/net/md-5/bungeecord-chat/*/bungeecord-chat-*.jar | tail -n 1)")
+
+          # Copy them into build/deps for easier classpath
+          for j in "${JARS[@]}"; do
+            echo "Copying $j"
+            cp "$j" build/deps/
+          done
+
+          ls -lah build/deps
+
+      # --- 3) Download BKCommonLib (not reliably on Maven Central; grab from Modrinth) ---
+      - name: Download BKCommonLib jar (Modrinth)
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # Search Modrinth for the project id
+          SEARCH_JSON="$(curl -s "https://api.modrinth.com/v2/search?query=bkcommonlib&limit=5&facets=[[\"project_type:plugin\"]]")"
+          PROJECT_ID="$(echo "$SEARCH_JSON" | jq -r '.hits[0].project_id')"
+
+          if [ "$PROJECT_ID" = "null" ] || [ -z "$PROJECT_ID" ]; then
+            echo "Could not find BKCommonLib on Modrinth search."
             exit 1
           fi
+
+          # Get latest version file url
+          VERSIONS_JSON="$(curl -s "https://api.modrinth.com/v2/project/${PROJECT_ID}/version")"
+          FILE_URL="$(echo "$VERSIONS_JSON" | jq -r '.[0].files[0].url')"
+
+          if [ "$FILE_URL" = "null" ] || [ -z "$FILE_URL" ]; then
+            echo "Could not get BKCommonLib file url."
+            exit 1
+          fi
+
+          echo "Downloading BKCommonLib from: $FILE_URL"
+          curl -L -o build/deps/BKCommonLib.jar "$FILE_URL"
+          ls -lah build/deps/BKCommonLib.jar
+
+      # --- 4) Compile ONLY v1_20_R4-specific sources (otherwise v1_21_* will break) ---
+      - name: Compile (target v1_20_R4 only)
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          test -f plugin.yml
 
           mkdir -p build/classes
 
-          # Source roots that exist in this repo
-          roots=()
-          for d in src com org net dev; do
-            if [ -d "$d" ]; then roots+=("$d"); fi
+          # Collect sources
+          mapfile -t ALL_SOURCES < <(find src com org net dev -type f -name "*.java" 2>/dev/null || true)
+
+          # Filter out versioned sources that are NOT v1_20_R4
+          # Keep:
+          #   - all non-versioned code
+          #   - ONLY files whose name contains v1_20_R4 in versioned util folders
+          SOURCES=()
+          for f in "${ALL_SOURCES[@]}"; do
+            if echo "$f" | grep -Eq '/(actionbar|audio/util|map/util)/v1_'; then
+              if echo "$f" | grep -q 'v1_20_R4'; then
+                SOURCES+=("$f")
+              fi
+            else
+              SOURCES+=("$f")
+            fi
           done
-          echo "Source roots: ${roots[*]}"
 
-          mapfile -t sources < <(find "${roots[@]}" -type f -name "*.java" 2>/dev/null || true)
-          echo "Java file count: ${#sources[@]}"
-          if [ "${#sources[@]}" -eq 0 ]; then
-            echo "No .java files found under: ${roots[*]}"
-            exit 1
-          fi
+          echo "Total sources found: ${#ALL_SOURCES[@]}"
+          echo "Sources after filtering: ${#SOURCES[@]}"
 
-          # Compile targeting Java 8 bytecode for broad MC compatibility
+          # Build classpath (Paper server jar + deps)
+          CP="build/deps/paper.jar"
+          for j in build/deps/*.jar; do
+            CP="${CP}:${j}"
+          done
+
+          # Compile; target Java 8 bytecode for runtime flexibility (change to 17 if you want)
           javac --release 8 -encoding UTF-8 \
-            -cp "$SPIGOT_API_JAR" \
+            -cp "$CP" \
             -d build/classes \
-            "${sources[@]}"
+            "${SOURCES[@]}"
 
-          # Include plugin.yml in jar root
           cp plugin.yml build/classes/plugin.yml
 
-      # 3) Package jar
       - name: Package JAR
         shell: bash
         run: |
@@ -88,5 +162,5 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: MediaPlayer-jar
+          name: MediaPlayer-1.20.4
           path: build/out/MediaPlayer.jar
