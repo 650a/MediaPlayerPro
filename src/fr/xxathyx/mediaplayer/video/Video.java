@@ -288,7 +288,7 @@ public class Video {
 			fileconfiguration.set("video.audio-offset", 0.0);
 			fileconfiguration.set("video.frames-folder", getFramesFolder().getPath());
 			fileconfiguration.set("video.frame-rate", framerate);
-			fileconfiguration.set("video.original-frame-rate", stream.r_frame_rate.doubleValue());
+			fileconfiguration.set("video.original-frame-rate", framerate);
 			fileconfiguration.set("video.frames", frames);
 			fileconfiguration.set("video.format", format);
 			fileconfiguration.set("video.width", originalWidth);
