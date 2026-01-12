@@ -26,11 +26,13 @@ import fr.xxathyx.mediaplayer.util.Host;
 */
 
 public class Configuration {
-	
+
 	private final Main plugin = Main.getPlugin(Main.class);
-	
+
+	private static final String DEFAULT_LANGUAGE = "EN";
+
 	private final File configurationFile = new File(plugin.getDataFolder() + "/configuration/", "configuration.yml");
-	private final File translationFile = new File(plugin.getDataFolder() + "/translations/", "GB.yml");	
+	private final File translationFile = new File(plugin.getDataFolder() + "/translations/", "EN.yml");	
 
 	private final File videosFolder = new File(plugin.getDataFolder() + "/videos/");
 	private final File screensFolder = new File(plugin.getDataFolder() + "/screens/");
@@ -53,58 +55,57 @@ public class Configuration {
      */
 	
 	public void setup() {
-		
-		if(!configurationFile.exists()) {
-						
-			fileconfiguration = new YamlConfiguration();
-			
-			fileconfiguration.set("plugin.auto-update", true);
-			fileconfiguration.set("plugin.auto-update-libraries", true);
-			fileconfiguration.set("plugin.update-url", plugin.getDescription().getWebsite());
-			fileconfiguration.set("plugin.force-permissions", true);
-			fileconfiguration.set("plugin.external-communication", true);
-			fileconfiguration.set("plugin.packet-compression", true);
-			fileconfiguration.set("plugin.alternative-server", "none");
-			fileconfiguration.set("plugin.system", fr.xxathyx.mediaplayer.system.System.getSystemType().toString());
-	    	fileconfiguration.set("plugin.langage", "GB");
-	    	
-		    Host host = new Host(Bukkit.getServer().getIp());
-		    if(host.getOfficials().contains(host.getCountryCode())) fileconfiguration.set("plugin.langage", host.getCountryCode());
-			
-			fileconfiguration.set("plugin.ping-sound", true);
-			fileconfiguration.set("plugin.verify-files-on-load", true);
-			fileconfiguration.set("plugin.delete-frames-on-loaded", false);
-			fileconfiguration.set("plugin.delete-video-on-loaded", false);
-			fileconfiguration.set("plugin.save-streams", false);
-			
-			fileconfiguration.set("plugin.screen-block", "BARRIER");
-			fileconfiguration.set("plugin.visible-screen-frames-support", false);
-			fileconfiguration.set("plugin.glowing-screen-frames-support", false);
-			
-			fileconfiguration.set("plugin.maximum-distance-to-receive", 10);
-			
-			fileconfiguration.set("plugin.maximum-playing-videos", 5);
-			fileconfiguration.set("plugin.maximum-loading-videos", 1);
-			
-			fileconfiguration.set("plugin.remove-screen-structure-on-restart", false);
-			fileconfiguration.set("plugin.remove-screen-structure-on-end", false);
-			
-			fileconfiguration.set("plugin.detect-duplicated-frames", false);
-			fileconfiguration.set("plugin.ressemblance-to-skip", 100);
 
-			fileconfiguration.set("media.allowed-domains", java.util.Collections.emptyList());
-			fileconfiguration.set("media.max-download-mb", 1024);
-			fileconfiguration.set("media.download-timeout-seconds", 30);
-			fileconfiguration.set("media.cache-max-gb", 5);
-			fileconfiguration.set("media.youtube-resolver-path", "");
+		if(!configurationFile.exists()) {
+			configurationFile.getParentFile().mkdirs();
+
+			fileconfiguration = new YamlConfiguration();
+
+			fileconfiguration.set("general.auto-update", true);
+			fileconfiguration.set("general.auto-update-libraries", true);
+			fileconfiguration.set("general.update-url", plugin.getDescription().getWebsite());
+			fileconfiguration.set("general.force-permissions", true);
+			fileconfiguration.set("general.external-communication", true);
+			fileconfiguration.set("general.packet-compression", true);
+			fileconfiguration.set("general.alternative-server", "none");
+	    	fileconfiguration.set("general.language", DEFAULT_LANGUAGE);
+
+		    Host host = new Host(Bukkit.getServer().getIp());
+		    if(host.getOfficials().contains(host.getCountryCode())) fileconfiguration.set("general.language", host.getCountryCode());
+
+			fileconfiguration.set("general.ping-sound", true);
+			fileconfiguration.set("general.verify-files-on-load", true);
+			fileconfiguration.set("general.save-streams", false);
+
+			fileconfiguration.set("general.maximum-distance-to-receive", 10);
+			fileconfiguration.set("general.maximum-playing-videos", 5);
+			fileconfiguration.set("general.maximum-loading-videos", 1);
+			fileconfiguration.set("general.remove-screen-structure-on-restart", false);
+			fileconfiguration.set("general.remove-screen-structure-on-end", false);
+
+			fileconfiguration.set("video.screen-block", "BARRIER");
+			fileconfiguration.set("video.visible-screen-frames-support", false);
+			fileconfiguration.set("video.glowing-screen-frames-support", false);
+
+			fileconfiguration.set("sources.allowed-domains", java.util.Collections.emptyList());
+			fileconfiguration.set("sources.max-download-mb", 1024);
+			fileconfiguration.set("sources.download-timeout-seconds", 30);
+			fileconfiguration.set("sources.cache-max-gb", 5);
+			fileconfiguration.set("sources.youtube-resolver-path", "");
 
 			fileconfiguration.set("audio.enabled", false);
 			fileconfiguration.set("audio.chunk-seconds", 2);
 			fileconfiguration.set("audio.codec", "vorbis");
 			fileconfiguration.set("audio.sample-rate", 48000);
 
-			fileconfiguration.set("resourcepack.host-url", "");
-			fileconfiguration.set("resourcepack.sha1", "");
+			fileconfiguration.set("resource_pack.url", "");
+			fileconfiguration.set("resource_pack.sha1", "");
+
+			fileconfiguration.set("advanced.delete-frames-on-loaded", false);
+			fileconfiguration.set("advanced.delete-video-on-loaded", false);
+			fileconfiguration.set("advanced.detect-duplicated-frames", false);
+			fileconfiguration.set("advanced.ressemblance-to-skip", 100);
+			fileconfiguration.set("advanced.system", fr.xxathyx.mediaplayer.system.System.getSystemType().toString());
 			
 			try {
 				fileconfiguration.save(configurationFile);
@@ -131,6 +132,7 @@ public class Configuration {
 		if(!audioChunksFolder.exists()) {
 			audioChunksFolder.mkdirs();
 		}
+		new File(plugin.getDataFolder() + "/translations/").mkdirs();
 	}
 	
     /**
@@ -143,11 +145,14 @@ public class Configuration {
      */
 	
 	public FileConfiguration getConfigFile() {
-		
+
 		fileconfiguration = new YamlConfiguration();
 		
 		try {
 			fileconfiguration.load(configurationFile);
+			if(migrateConfiguration(fileconfiguration)) {
+				fileconfiguration.save(configurationFile);
+			}
 		}catch (IOException | InvalidConfigurationException e) {
 			e.printStackTrace();
 		}
@@ -165,7 +170,8 @@ public class Configuration {
 	
 	public FileConfiguration getMessagesFile() {
 		
-		File translationFile = new File(plugin.getDataFolder() + "/translations/", plugin_langage() + ".yml");	
+		String language = plugin_langage();
+		File translationFile = new File(plugin.getDataFolder() + "/translations/", language + ".yml");	
 		if(!translationFile.exists()) translationFile = this.translationFile;
 		
 		fileconfiguration = new YamlConfiguration();
@@ -221,6 +227,9 @@ public class Configuration {
      */
 	
 	public String getMessage(String a) {
+		if(a == null) {
+			return "";
+		}
 		return ChatColor.translateAlternateColorCodes('&', a);
 	}
 	
@@ -234,7 +243,10 @@ public class Configuration {
      */
 	
 	public String getMessage(String a, String b) {
-				
+		if(a == null) {
+			return "";
+		}
+
 		if(a.contains("%video%")) {
 			a = a.replaceAll("%video%", b);
 		}
@@ -288,7 +300,10 @@ public class Configuration {
      */
 	
 	public String getMessage(String a, String b, String c) {
-		
+		if(a == null) {
+			return "";
+		}
+
 		if(a.contains("%video%")) {
 			a = a.replaceAll("%video%", b);
 		}
@@ -334,128 +349,133 @@ public class Configuration {
 	//ALL GETTER METHODS THAT CAN BE CALLED FOR OBTAINING CONFIGURATION INFORMATIONS AND MESSAGES//
 	
 	public boolean plugin_auto_update() {
-		return getConfigFile().getBoolean("plugin.auto-update");
+		return getBooleanValue("general.auto-update", "plugin.auto-update", true);
 	}
 	
 	public boolean plugin_auto_update_libraries() {
-		return getConfigFile().getBoolean("plugin.auto-update-libraries");
+		return getBooleanValue("general.auto-update-libraries", "plugin.auto-update-libraries", true);
 	}
 
 	public String plugin_update_url() {
-		String updateUrl = getConfigFile().getString("plugin.update-url");
-		if(updateUrl == null || updateUrl.isEmpty()) {
-			return plugin.getDescription().getWebsite();
-		}
-		return updateUrl;
+		return getStringValue("general.update-url", "plugin.update-url", plugin.getDescription().getWebsite());
 	}
 	
 	public boolean plugin_force_permissions() {
-		return getConfigFile().getBoolean("plugin.force-permissions");
+		return getBooleanValue("general.force-permissions", "plugin.force-permissions", true);
 	}
 	
 	public boolean plugin_external_communication() {
-		return getConfigFile().getBoolean("plugin.external-communication");
+		return getBooleanValue("general.external-communication", "plugin.external-communication", true);
 	}
 	
 	public boolean plugin_packet_compression() {
-		return getConfigFile().getBoolean("plugin.packet-compression");
+		return getBooleanValue("general.packet-compression", "plugin.packet-compression", true);
 	}
 	
 	public String plugin_alternative_server() {
-		return getConfigFile().getString("plugin.alternative-server");
+		return getStringValue("general.alternative-server", "plugin.alternative-server", "none");
 	}
 	
 	public String plugin_langage() {
-		return getConfigFile().getString("plugin.langage");
+		String language = getStringValue("general.language", "plugin.langage", DEFAULT_LANGUAGE);
+		if(language == null || language.isBlank()) {
+			language = DEFAULT_LANGUAGE;
+		}
+		File languageFile = new File(plugin.getDataFolder() + "/translations/", language + ".yml");
+		if(!languageFile.exists()) {
+			Bukkit.getLogger().warning("[MediaPlayer]: Missing translation " + language + ".yml, falling back to " + DEFAULT_LANGUAGE + ".");
+			language = DEFAULT_LANGUAGE;
+		}
+		return language;
 	}
 	
 	public boolean plugin_ping_sound() {
-		return getConfigFile().getBoolean("plugin.ping-sound");
+		return getBooleanValue("general.ping-sound", "plugin.ping-sound", true);
 	}
 	
 	public boolean verify_files_on_load() {
-		return getConfigFile().getBoolean("plugin.verify-files-on-load");
+		return getBooleanValue("general.verify-files-on-load", "plugin.verify-files-on-load", true);
 	}
 	
 	public boolean frames_delete_on_loaded() {
-		return getConfigFile().getBoolean("plugin.delete-frames-on-loaded");
+		return getBooleanValue("advanced.delete-frames-on-loaded", "plugin.delete-frames-on-loaded", false);
 	}
 	
 	public boolean video_delete_on_loaded() {
-		return getConfigFile().getBoolean("plugin.delete-video-on-loaded");
+		return getBooleanValue("advanced.delete-video-on-loaded", "plugin.delete-video-on-loaded", false);
 	}
 	
 	public boolean save_streams() {
-		return getConfigFile().getBoolean("plugin.save-streams");
+		return getBooleanValue("general.save-streams", "plugin.save-streams", false);
 	}
 	
 	public String screen_block() {
-		String material = getConfigFile().getString("plugin.screen-block");
+		String material = getStringValue("video.screen-block", "plugin.screen-block", "BARRIER");
 		if(material.equalsIgnoreCase("BARRIER") && plugin.isOld()) material = "GLASS"; 
 		return material;
 	}
 	
 	public boolean visible_screen_frames_support() {
-		return getConfigFile().getBoolean("plugin.visible-screen-frames-support");
+		return getBooleanValue("video.visible-screen-frames-support", "plugin.visible-screen-frames-support", false);
 	}
 	
 	public boolean glowing_screen_frames_support() {
-		return getConfigFile().getBoolean("plugin.glowing-screen-frames-support");
+		return getBooleanValue("video.glowing-screen-frames-support", "plugin.glowing-screen-frames-support", false);
 	}
 	
 	public int maximum_distance_to_receive() {
-		return getConfigFile().getInt("plugin.maximum-distance-to-receive");
+		return getIntValue("general.maximum-distance-to-receive", "plugin.maximum-distance-to-receive", 10);
 	}
 
 	public java.util.List<String> media_allowed_domains() {
-		return getConfigFile().getStringList("media.allowed-domains");
+		return getStringListValue("sources.allowed-domains", "media.allowed-domains");
 	}
 
 	public long media_max_download_mb() {
-		return getConfigFile().getLong("media.max-download-mb");
+		return getLongValue("sources.max-download-mb", "media.max-download-mb", 1024);
 	}
 
 	public int media_download_timeout_seconds() {
-		return getConfigFile().getInt("media.download-timeout-seconds");
+		return getIntValue("sources.download-timeout-seconds", "media.download-timeout-seconds", 30);
 	}
 
 	public long media_cache_max_gb() {
-		return getConfigFile().getLong("media.cache-max-gb");
+		return getLongValue("sources.cache-max-gb", "media.cache-max-gb", 5);
 	}
 
 	public String media_youtube_resolver_path() {
-		return getConfigFile().getString("media.youtube-resolver-path");
+		return getStringValue("sources.youtube-resolver-path", "media.youtube-resolver-path", "");
 	}
 
 	public boolean audio_enabled() {
-		return getConfigFile().getBoolean("audio.enabled");
+		return getBooleanValue("audio.enabled", "audio.enabled", false);
 	}
 
 	public int audio_chunk_seconds() {
-		return getConfigFile().getInt("audio.chunk-seconds");
+		return getIntValue("audio.chunk-seconds", "audio.chunk-seconds", 2);
 	}
 
 	public String audio_codec() {
-		return getConfigFile().getString("audio.codec");
+		return getStringValue("audio.codec", "audio.codec", "vorbis");
 	}
 
 	public int audio_sample_rate() {
-		return getConfigFile().getInt("audio.sample-rate");
+		return getIntValue("audio.sample-rate", "audio.sample-rate", 48000);
 	}
 
 	public String resourcepack_host_url() {
-		return getConfigFile().getString("resourcepack.host-url");
+		return getStringValue("resource_pack.url", "resourcepack.host-url", "");
 	}
 
 	public String resourcepack_sha1() {
-		return getConfigFile().getString("resourcepack.sha1");
+		return getStringValue("resource_pack.sha1", "resourcepack.sha1", "");
 	}
 
 	public void set_resourcepack_sha1(String sha1) {
 		fileconfiguration = new YamlConfiguration();
 		try {
 			fileconfiguration.load(configurationFile);
-			fileconfiguration.set("resourcepack.sha1", sha1);
+			fileconfiguration.set("resource_pack.sha1", sha1);
 			fileconfiguration.save(configurationFile);
 		}catch (IOException | InvalidConfigurationException e) {
 			e.printStackTrace();
@@ -463,27 +483,208 @@ public class Configuration {
 	}
 	
 	public int maximum_playing_videos() {
-		return getConfigFile().getInt("plugin.maximum-playing-videos");
+		return getIntValue("general.maximum-playing-videos", "plugin.maximum-playing-videos", 5);
 	}
 	
 	public int maximum_loading_videos() {
-		return getConfigFile().getInt("plugin.maximum-loading-videos");
+		return getIntValue("general.maximum-loading-videos", "plugin.maximum-loading-videos", 1);
 	}
 	
 	public boolean remove_screen_on_end() {
-		return getConfigFile().getBoolean("plugin.remove-screen-structure-on-end");
+		return getBooleanValue("general.remove-screen-structure-on-end", "plugin.remove-screen-structure-on-end", false);
 	}
 	
 	public boolean remove_screen_on_restart() {
-		return getConfigFile().getBoolean("plugin.remove-screen-structure-on-restart");
+		return getBooleanValue("general.remove-screen-structure-on-restart", "plugin.remove-screen-structure-on-restart", false);
 	}
 	
 	public boolean detect_duplicated_frames() {
-		return getConfigFile().getBoolean("plugin.detect-duplicated-frames");
+		return getBooleanValue("advanced.detect-duplicated-frames", "plugin.detect-duplicated-frames", false);
 	}
 	
 	public double ressemblance_to_skip() {
-		return getConfigFile().getDouble("plugin.ressemblance-to-skip");
+		return getDoubleValue("advanced.ressemblance-to-skip", "plugin.ressemblance-to-skip", 100);
+	}
+
+	private boolean migrateConfiguration(FileConfiguration configuration) {
+		boolean changed = false;
+		changed |= ensureString(configuration, "general.language", "plugin.langage", DEFAULT_LANGUAGE);
+		changed |= ensureBoolean(configuration, "general.auto-update", "plugin.auto-update", true);
+		changed |= ensureBoolean(configuration, "general.auto-update-libraries", "plugin.auto-update-libraries", true);
+		changed |= ensureString(configuration, "general.update-url", "plugin.update-url", plugin.getDescription().getWebsite());
+		changed |= ensureBoolean(configuration, "general.force-permissions", "plugin.force-permissions", true);
+		changed |= ensureBoolean(configuration, "general.external-communication", "plugin.external-communication", true);
+		changed |= ensureBoolean(configuration, "general.packet-compression", "plugin.packet-compression", true);
+		changed |= ensureString(configuration, "general.alternative-server", "plugin.alternative-server", "none");
+		changed |= ensureBoolean(configuration, "general.ping-sound", "plugin.ping-sound", true);
+		changed |= ensureBoolean(configuration, "general.verify-files-on-load", "plugin.verify-files-on-load", true);
+		changed |= ensureBoolean(configuration, "general.save-streams", "plugin.save-streams", false);
+		changed |= ensureInt(configuration, "general.maximum-distance-to-receive", "plugin.maximum-distance-to-receive", 10);
+		changed |= ensureInt(configuration, "general.maximum-playing-videos", "plugin.maximum-playing-videos", 5);
+		changed |= ensureInt(configuration, "general.maximum-loading-videos", "plugin.maximum-loading-videos", 1);
+		changed |= ensureBoolean(configuration, "general.remove-screen-structure-on-restart", "plugin.remove-screen-structure-on-restart", false);
+		changed |= ensureBoolean(configuration, "general.remove-screen-structure-on-end", "plugin.remove-screen-structure-on-end", false);
+
+		changed |= ensureString(configuration, "video.screen-block", "plugin.screen-block", "BARRIER");
+		changed |= ensureBoolean(configuration, "video.visible-screen-frames-support", "plugin.visible-screen-frames-support", false);
+		changed |= ensureBoolean(configuration, "video.glowing-screen-frames-support", "plugin.glowing-screen-frames-support", false);
+
+		changed |= ensureStringList(configuration, "sources.allowed-domains", "media.allowed-domains");
+		changed |= ensureLong(configuration, "sources.max-download-mb", "media.max-download-mb", 1024);
+		changed |= ensureInt(configuration, "sources.download-timeout-seconds", "media.download-timeout-seconds", 30);
+		changed |= ensureLong(configuration, "sources.cache-max-gb", "media.cache-max-gb", 5);
+		changed |= ensureString(configuration, "sources.youtube-resolver-path", "media.youtube-resolver-path", "");
+
+		changed |= ensureBoolean(configuration, "audio.enabled", "audio.enabled", false);
+		changed |= ensureInt(configuration, "audio.chunk-seconds", "audio.chunk-seconds", 2);
+		changed |= ensureString(configuration, "audio.codec", "audio.codec", "vorbis");
+		changed |= ensureInt(configuration, "audio.sample-rate", "audio.sample-rate", 48000);
+
+		changed |= ensureString(configuration, "resource_pack.url", "resourcepack.host-url", "");
+		changed |= ensureString(configuration, "resource_pack.sha1", "resourcepack.sha1", "");
+
+		changed |= ensureBoolean(configuration, "advanced.delete-frames-on-loaded", "plugin.delete-frames-on-loaded", false);
+		changed |= ensureBoolean(configuration, "advanced.delete-video-on-loaded", "plugin.delete-video-on-loaded", false);
+		changed |= ensureBoolean(configuration, "advanced.detect-duplicated-frames", "plugin.detect-duplicated-frames", false);
+		changed |= ensureDouble(configuration, "advanced.ressemblance-to-skip", "plugin.ressemblance-to-skip", 100);
+		changed |= ensureString(configuration, "advanced.system", "plugin.system",
+				fr.xxathyx.mediaplayer.system.System.getSystemType().toString());
+		return changed;
+	}
+
+	private boolean ensureString(FileConfiguration configuration, String newKey, String legacyKey, String defaultValue) {
+		if(configuration.contains(newKey)) {
+			return false;
+		}
+		String value = legacyKey == null ? null : configuration.getString(legacyKey);
+		if(value == null || value.isEmpty()) {
+			value = defaultValue;
+		}
+		configuration.set(newKey, value);
+		return true;
+	}
+
+	private boolean ensureBoolean(FileConfiguration configuration, String newKey, String legacyKey, boolean defaultValue) {
+		if(configuration.contains(newKey)) {
+			return false;
+		}
+		boolean value = legacyKey != null && configuration.contains(legacyKey)
+				? configuration.getBoolean(legacyKey)
+				: defaultValue;
+		configuration.set(newKey, value);
+		return true;
+	}
+
+	private boolean ensureInt(FileConfiguration configuration, String newKey, String legacyKey, int defaultValue) {
+		if(configuration.contains(newKey)) {
+			return false;
+		}
+		int value = legacyKey != null && configuration.contains(legacyKey)
+				? configuration.getInt(legacyKey)
+				: defaultValue;
+		configuration.set(newKey, value);
+		return true;
+	}
+
+	private boolean ensureLong(FileConfiguration configuration, String newKey, String legacyKey, long defaultValue) {
+		if(configuration.contains(newKey)) {
+			return false;
+		}
+		long value = legacyKey != null && configuration.contains(legacyKey)
+				? configuration.getLong(legacyKey)
+				: defaultValue;
+		configuration.set(newKey, value);
+		return true;
+	}
+
+	private boolean ensureDouble(FileConfiguration configuration, String newKey, String legacyKey, double defaultValue) {
+		if(configuration.contains(newKey)) {
+			return false;
+		}
+		double value = legacyKey != null && configuration.contains(legacyKey)
+				? configuration.getDouble(legacyKey)
+				: defaultValue;
+		configuration.set(newKey, value);
+		return true;
+	}
+
+	private boolean ensureStringList(FileConfiguration configuration, String newKey, String legacyKey) {
+		if(configuration.contains(newKey)) {
+			return false;
+		}
+		java.util.List<String> value = legacyKey != null && configuration.contains(legacyKey)
+				? configuration.getStringList(legacyKey)
+				: java.util.Collections.emptyList();
+		configuration.set(newKey, value);
+		return true;
+	}
+
+	private String getStringValue(String newKey, String legacyKey, String defaultValue) {
+		FileConfiguration configuration = getConfigFile();
+		if(configuration.contains(newKey)) {
+			String value = configuration.getString(newKey);
+			return (value == null || value.isEmpty()) ? defaultValue : value;
+		}
+		if(legacyKey != null && configuration.contains(legacyKey)) {
+			String value = configuration.getString(legacyKey);
+			return (value == null || value.isEmpty()) ? defaultValue : value;
+		}
+		return defaultValue;
+	}
+
+	private boolean getBooleanValue(String newKey, String legacyKey, boolean defaultValue) {
+		FileConfiguration configuration = getConfigFile();
+		if(configuration.contains(newKey)) {
+			return configuration.getBoolean(newKey);
+		}
+		if(legacyKey != null && configuration.contains(legacyKey)) {
+			return configuration.getBoolean(legacyKey);
+		}
+		return defaultValue;
+	}
+
+	private int getIntValue(String newKey, String legacyKey, int defaultValue) {
+		FileConfiguration configuration = getConfigFile();
+		if(configuration.contains(newKey)) {
+			return configuration.getInt(newKey);
+		}
+		if(legacyKey != null && configuration.contains(legacyKey)) {
+			return configuration.getInt(legacyKey);
+		}
+		return defaultValue;
+	}
+
+	private long getLongValue(String newKey, String legacyKey, long defaultValue) {
+		FileConfiguration configuration = getConfigFile();
+		if(configuration.contains(newKey)) {
+			return configuration.getLong(newKey);
+		}
+		if(legacyKey != null && configuration.contains(legacyKey)) {
+			return configuration.getLong(legacyKey);
+		}
+		return defaultValue;
+	}
+
+	private double getDoubleValue(String newKey, String legacyKey, double defaultValue) {
+		FileConfiguration configuration = getConfigFile();
+		if(configuration.contains(newKey)) {
+			return configuration.getDouble(newKey);
+		}
+		if(legacyKey != null && configuration.contains(legacyKey)) {
+			return configuration.getDouble(legacyKey);
+		}
+		return defaultValue;
+	}
+
+	private java.util.List<String> getStringListValue(String newKey, String legacyKey) {
+		FileConfiguration configuration = getConfigFile();
+		if(configuration.contains(newKey)) {
+			return configuration.getStringList(newKey);
+		}
+		if(legacyKey != null && configuration.contains(legacyKey)) {
+			return configuration.getStringList(legacyKey);
+		}
+		return java.util.Collections.emptyList();
 	}
 	
 	public String plugin_outdated() {

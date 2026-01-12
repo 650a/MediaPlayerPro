@@ -28,6 +28,7 @@ public class AudioPackManager {
     private final Main plugin;
     private final Configuration configuration;
     private final Map<String, Server> servers = new ConcurrentHashMap<>();
+    private boolean warnedMissingHostUrl = false;
 
     public AudioPackManager(Main plugin) {
         this.plugin = plugin;
@@ -35,6 +36,14 @@ public class AudioPackManager {
     }
 
     public AudioTrack prepare(MediaEntry entry, File mediaFile) throws IOException {
+        String host = configuration.resourcepack_host_url();
+        if (host == null || host.isBlank()) {
+            if (!warnedMissingHostUrl) {
+                plugin.getLogger().warning("[MediaPlayer]: audio enabled but no pack host-url configured");
+                warnedMissingHostUrl = true;
+            }
+            return null;
+        }
         File packFile = getPackFile(entry);
         if (!packFile.exists() || entry.getAudioSha1() == null || entry.getAudioSha1().isEmpty()) {
             buildPack(entry, mediaFile);
@@ -47,6 +56,9 @@ public class AudioPackManager {
 
         byte[] sha1 = decodeSha1(entry.getAudioSha1());
         String packUrl = resolvePackUrl(entry, packFile);
+        if (packUrl == null || packUrl.isBlank()) {
+            return null;
+        }
         return new AudioTrack(entry.getId(), chunkCount, configuration.audio_chunk_seconds(), packUrl, sha1);
     }
 
@@ -215,13 +227,7 @@ public class AudioPackManager {
             }
             return url;
         }
-
-        Server server = servers.computeIfAbsent(entry.getId(), key -> {
-            Server packServer = new Server(packFile);
-            packServer.start();
-            return packServer;
-        });
-        return server.url();
+        return null;
     }
 
     private String computeSha1(File file) throws IOException {

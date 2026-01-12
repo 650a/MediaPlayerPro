@@ -51,6 +51,27 @@ Use:
    * `mediaplayer.media.manage`
    * `mediaplayer.media.admin`
 2. (Optional) Set scaling mode per screen with `/mp scale <screen> <fit|fill|stretch>`.
-3. Configure `media.allowed-domains` before using URL-based media.
-4. If you want vanilla audio, enable `audio.enabled` and provide a pack host URL (or use the built-in server).
+3. Configure `media.allowed-domains` (or `sources.allowed-domains`) before using URL-based media.
+4. If you want vanilla audio, enable `audio.enabled` and provide `resource_pack.url`.
 5. No configuration migration is required beyond ensuring `screen.scale-mode` exists (auto-added on load).
+
+## Configuration format update
+
+MediaPlayer now uses a simplified configuration structure with grouped sections:
+
+* `general` for plugin behavior and limits.
+* `video` for screen rendering options.
+* `sources` for media download controls.
+* `audio` for audio slicing settings.
+* `resource_pack` for the pack hosting URL and SHA1.
+* `advanced` for legacy/rare toggles.
+
+Legacy keys like `plugin.langage`, `plugin.maximum-distance-to-receive`, and `media.allowed-domains` remain supported.
+On load, MediaPlayer maps existing legacy keys into the new structure and preserves your values.
+
+### Required changes
+
+* If you use audio, set `resource_pack.url`. When it is empty, MediaPlayer logs
+  `audio enabled but no pack host-url configured` and disables audio gracefully.
+* The default language is now English (`general.language: EN`). If the configured translation file
+  is missing, MediaPlayer falls back to English and logs a warning.

@@ -43,24 +43,47 @@ Screen list entries open a Screen Control GUI with Play/Stop/Pause/Resume and sc
 * `mediaplayer.media.manage` - List cached media.
 * `mediaplayer.media.admin` - Add/remove URL media and play direct URLs.
 
+## Minimal configuration
+
+```yaml
+general:
+  language: EN
+
+sources:
+  allowed-domains:
+    - "https://example.com"
+
+audio:
+  enabled: false
+
+resource_pack:
+  url: ""
+```
+
 ## Configuration keys
 
-* `plugin.maximum-distance-to-receive` - Viewer range for playback updates.
-* `plugin.screen-block` - Block used for screen structures.
-* `plugin.visible-screen-frames-support` - Whether item frames are visible.
-* `plugin.glowing-screen-frames-support` - Whether item frames glow.
-* `plugin.delete-frames-on-loaded` - Now ignored to keep frames for scaling.
-* `media.allowed-domains` - URL whitelist (empty = deny all).
-* `media.max-download-mb` - Maximum download size.
-* `media.download-timeout-seconds` - Download timeout per URL.
-* `media.cache-max-gb` - LRU cache size cap.
-* `media.youtube-resolver-path` - Optional yt-dlp resolver path.
+* `general.maximum-distance-to-receive` - Viewer range for playback updates.
+* `general.maximum-playing-videos` - Max simultaneous playback sessions.
+* `general.maximum-loading-videos` - Max concurrent media loads.
+* `general.remove-screen-structure-on-restart` - Remove screens on restart.
+* `video.screen-block` - Block used for screen structures.
+* `video.visible-screen-frames-support` - Whether item frames are visible.
+* `video.glowing-screen-frames-support` - Whether item frames glow.
+* `sources.allowed-domains` - URL whitelist (empty = deny all).
+* `sources.max-download-mb` - Maximum download size.
+* `sources.download-timeout-seconds` - Download timeout per URL.
+* `sources.cache-max-gb` - LRU cache size cap.
+* `sources.youtube-resolver-path` - Optional yt-dlp resolver path.
 * `audio.enabled` - Enable audio resource pack generation (vanilla clients).
 * `audio.chunk-seconds` - Chunk size for audio slicing.
 * `audio.codec` - Audio codec (vorbis default).
 * `audio.sample-rate` - Audio sample rate (48000 default).
-* `resourcepack.host-url` - External host URL for packs (optional).
-* `resourcepack.sha1` - Last generated pack SHA1.
+* `resource_pack.url` - External host URL for packs (required when audio is enabled).
+* `resource_pack.sha1` - Last generated pack SHA1.
+* `advanced.delete-frames-on-loaded` - Legacy toggle, rarely needed.
+* `advanced.delete-video-on-loaded` - Legacy toggle, rarely needed.
+* `advanced.detect-duplicated-frames` - Experimental frame deduplication.
+* `advanced.ressemblance-to-skip` - Threshold for deduplication skip.
 
 Screens store per-screen data in `screens/<uuid>/<uuid>.yml`, including:
 
@@ -106,4 +129,6 @@ Notice that those integers represent the real location of the click according to
 
 In order to have audio, users must simply set their 'Server Resource Pack' to ```Prompt``` or ```Enabled```.
 Vanilla audio playback is **opt-in** and requires `audio.enabled: true` so MediaPlayer can generate resource packs.
+Audio also requires `resource_pack.url` to be configured (players must accept the server resource pack).
+If `resource_pack.url` is empty, MediaPlayer logs a warning and disables audio gracefully.
 Large videos can bloat resource packs; prefer short clips or host packs externally.
