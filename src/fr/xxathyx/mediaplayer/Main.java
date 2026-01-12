@@ -206,12 +206,7 @@ public class Main extends JavaPlugin implements Listener {
 		
         translater = new Translater();
 
-        try {
-            translater.createTranslationFile("GB");
-            translater.createTranslationFile("FR");
-        }catch (URISyntaxException | IOException e) {
-            e.printStackTrace();
-        }
+        translater.exportBundledTranslations();
 		
 		updater = new Updater();
 		updater.update();

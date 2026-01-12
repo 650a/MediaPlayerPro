@@ -170,11 +170,15 @@ public class MediaManager {
                     return;
                 }
                 AudioTrack track = null;
-                if (configuration.audio_enabled() && !noAudio) {
+                boolean allowAudio = configuration.audio_enabled() && !noAudio;
+                if (allowAudio) {
                     track = audioPackManager.prepare(entry, videoFile);
                     library.save();
+                    if (track == null) {
+                        allowAudio = false;
+                    }
                 }
-                PlaybackOptions options = new PlaybackOptions(!noAudio, entry, track);
+                PlaybackOptions options = new PlaybackOptions(allowAudio, entry, track);
                 scheduler.runSync(() -> plugin.getPlaybackManager().start(screen, video, options));
                 scheduler.runSync(() -> sender.sendMessage(ChatColor.GREEN + "Playing media " + entry.getName() + " on " + screen.getName() + "."));
             } catch (IOException | org.bukkit.configuration.InvalidConfigurationException e) {
