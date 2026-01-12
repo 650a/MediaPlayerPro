@@ -9,9 +9,9 @@ Allows you to play and use various medias such as videos on Minecraft.
 Allows you to play and use various medias such as videos with audio on Minecraft (1.7-1.21).
 For better performance, set network-compression-threshold to -1 in server.properties
 
-Videos : https://youtu.be/LYVOkX7uQ5M
+Videos : COMING SOON
 
-Livestreams : https://youtu.be/swcMQTto5rI
+Livestreams : COMING SOON
 
 ## Commands
 
