@@ -137,6 +137,7 @@ public class Main extends JavaPlugin implements Listener {
 	private MediaLibrary mediaLibrary;
 	private MediaManager mediaManager;
 	private AudioPackManager audioPackManager;
+	private fr.xxathyx.mediaplayer.theatre.TheatreManager theatreManager;
 	
 	private final ArrayList<Group> groups = new ArrayList<>();
 	
@@ -289,7 +290,9 @@ public class Main extends JavaPlugin implements Listener {
 					
 			if(!old) Bukkit.getServer().getPluginManager().registerEvents(new ResourcePackStatus(), this);
 					
-			screenManager.loadAll();
+	        screenManager.loadAll();
+	        theatreManager = new fr.xxathyx.mediaplayer.theatre.TheatreManager(this, screenManager, mediaManager, playbackManager);
+	        theatreManager.load();
 			new TaskAsyncLoadConfigurations().runTaskAsynchronously(this);
 			if(legacy) new TaskAsyncLoadImages().runTaskAsynchronously(this);
 			if(!legacy) new TaskAsyncLoadImages().runTask(this);
@@ -319,6 +322,9 @@ public class Main extends JavaPlugin implements Listener {
 
 		if(playbackManager != null) {
 			playbackManager.stopAll();
+		}
+		if(theatreManager != null) {
+			theatreManager.shutdown();
 		}
 		if(audioPackManager != null) {
 			audioPackManager.stopAll();
@@ -600,6 +606,10 @@ public class Main extends JavaPlugin implements Listener {
 
 	public MediaLibrary getMediaLibrary() {
 		return mediaLibrary;
+	}
+
+	public fr.xxathyx.mediaplayer.theatre.TheatreManager getTheatreManager() {
+		return theatreManager;
 	}
 	
     /**

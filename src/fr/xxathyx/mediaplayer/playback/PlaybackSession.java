@@ -58,6 +58,8 @@ public class PlaybackSession {
     private final Set<UUID> audioListeners = new HashSet<>();
 
     private BukkitTask tickTask;
+    private java.util.function.Predicate<Player> audioAudienceFilter;
+    private int audioUpdateCounter = 0;
     private boolean paused = false;
     private volatile boolean active = true;
     private int frameIndex = 0;
@@ -91,6 +93,10 @@ public class PlaybackSession {
 
     public Video getVideo() {
         return video;
+    }
+
+    public void setAudioAudienceFilter(java.util.function.Predicate<Player> filter) {
+        this.audioAudienceFilter = filter;
     }
 
     public void start() {
@@ -186,7 +192,10 @@ public class PlaybackSession {
         }
 
         updateViewers();
-        updateAudioListeners();
+        int audioInterval = Math.max(1, configuration.theatre_audio_update_interval());
+        if (audioUpdateCounter++ % audioInterval == 0) {
+            updateAudioListeners();
+        }
 
         long now = System.nanoTime();
         if (now - lastFrameNanos < frameDurationNanos) {
@@ -321,7 +330,7 @@ public class PlaybackSession {
         for (Entity entity : getNearbyEntities(speaker, radius)) {
             if (entity.getType() == EntityType.PLAYER) {
                 Player player = (Player) entity;
-                if (player.isOnline() && player.getWorld().equals(speaker.getWorld())) {
+                if (player.isOnline() && player.getWorld().equals(speaker.getWorld()) && isAllowedAudioListener(player)) {
                     seen.add(player.getUniqueId());
                     if (!audioListeners.contains(player.getUniqueId())) {
                         handleAudioListenerJoin(player);
@@ -331,6 +340,13 @@ public class PlaybackSession {
         }
 
         audioListeners.retainAll(seen);
+    }
+
+    private boolean isAllowedAudioListener(Player player) {
+        if (audioAudienceFilter == null) {
+            return true;
+        }
+        return audioAudienceFilter.test(player);
     }
 
     private void handleAudioListenerJoin(Player player) {

@@ -28,3 +28,19 @@ permissions:
     description: Add/remove URL-based media and play direct URLs.
   mediaplayer.pack.manage:
     description: Manage internal resource pack hosting and rebuilds.
+  mediaplayer.theatre.room.create:
+    description: Create theatre rooms.
+  mediaplayer.theatre.room.delete:
+    description: Delete theatre rooms.
+  mediaplayer.theatre.schedule.add:
+    description: Add theatre schedule entries.
+  mediaplayer.theatre.schedule.remove:
+    description: Remove theatre schedule entries.
+  mediaplayer.theatre.schedule.list:
+    description: List theatre schedule entries.
+  mediaplayer.theatre.play:
+    description: Start a theatre show in a room.
+  mediaplayer.theatre.stop:
+    description: Stop a theatre show in a room.
+  mediaplayer.theatre.doctor:
+    description: Run theatre self-check diagnostics.

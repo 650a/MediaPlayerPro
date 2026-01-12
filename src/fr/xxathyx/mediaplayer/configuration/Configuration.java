@@ -40,6 +40,7 @@ public class Configuration {
 	private final File mediaCacheFolder = new File(plugin.getDataFolder() + "/cache/videos/");
 	private final File resourcePackFolder = new File(plugin.getDataFolder() + "/resourcepacks/");
 	private final File audioChunksFolder = new File(plugin.getDataFolder() + "/audio/");
+	private final File theatreFolder = new File(plugin.getDataFolder() + "/theatre/");
 	
 	private FileConfiguration fileconfiguration;
 	
@@ -104,6 +105,14 @@ public class Configuration {
 			fileconfiguration.set("audio.codec", "vorbis");
 			fileconfiguration.set("audio.sample-rate", 48000);
 
+			fileconfiguration.set("theatre.enabled", true);
+			fileconfiguration.set("theatre.max-shows", 5);
+			fileconfiguration.set("theatre.tick-interval", 1);
+			fileconfiguration.set("theatre.audio-update-interval", 1);
+			fileconfiguration.set("theatre.audience-check-interval", 20);
+			fileconfiguration.set("theatre.default-zone-radius", 16);
+			fileconfiguration.set("theatre.schedule-check-interval-seconds", 30);
+
 			fileconfiguration.set("resource_pack.url", "");
 			fileconfiguration.set("resource_pack.sha1", "");
 			fileconfiguration.set("resource_pack.assets-hash", "");
@@ -143,6 +152,9 @@ public class Configuration {
 		}
 		if(!audioChunksFolder.exists()) {
 			audioChunksFolder.mkdirs();
+		}
+		if(!theatreFolder.exists()) {
+			theatreFolder.mkdirs();
 		}
 		new File(plugin.getDataFolder() + "/translations/").mkdirs();
 	}
@@ -231,6 +243,10 @@ public class Configuration {
 
 	public File getAudioChunksFolder() {
 		return audioChunksFolder;
+	}
+
+	public File getTheatreFolder() {
+		return theatreFolder;
 	}
 	
     /**
@@ -502,6 +518,34 @@ public class Configuration {
 		return getIntValue("audio.sample-rate", "audio.sample-rate", 48000);
 	}
 
+	public boolean theatre_enabled() {
+		return getBooleanValue("theatre.enabled", null, true);
+	}
+
+	public int theatre_max_shows() {
+		return getIntValue("theatre.max-shows", null, 5);
+	}
+
+	public int theatre_tick_interval() {
+		return getIntValue("theatre.tick-interval", null, 1);
+	}
+
+	public int theatre_audio_update_interval() {
+		return getIntValue("theatre.audio-update-interval", null, 1);
+	}
+
+	public int theatre_audience_check_interval() {
+		return getIntValue("theatre.audience-check-interval", null, 20);
+	}
+
+	public int theatre_default_zone_radius() {
+		return getIntValue("theatre.default-zone-radius", null, 16);
+	}
+
+	public int theatre_schedule_check_interval_seconds() {
+		return getIntValue("theatre.schedule-check-interval-seconds", null, 30);
+	}
+
 	public String resourcepack_host_url() {
 		return getStringValue("resource_pack.url", "resourcepack.host-url", "");
 	}
@@ -638,6 +682,14 @@ public class Configuration {
 		changed |= ensureInt(configuration, "audio.chunk-seconds", "audio.chunk-seconds", 2);
 		changed |= ensureString(configuration, "audio.codec", "audio.codec", "vorbis");
 		changed |= ensureInt(configuration, "audio.sample-rate", "audio.sample-rate", 48000);
+
+		changed |= ensureBoolean(configuration, "theatre.enabled", null, true);
+		changed |= ensureInt(configuration, "theatre.max-shows", null, 5);
+		changed |= ensureInt(configuration, "theatre.tick-interval", null, 1);
+		changed |= ensureInt(configuration, "theatre.audio-update-interval", null, 1);
+		changed |= ensureInt(configuration, "theatre.audience-check-interval", null, 20);
+		changed |= ensureInt(configuration, "theatre.default-zone-radius", null, 16);
+		changed |= ensureInt(configuration, "theatre.schedule-check-interval-seconds", null, 30);
 
 		changed |= ensureString(configuration, "resource_pack.url", "resourcepack.host-url", "");
 		changed |= ensureString(configuration, "resource_pack.sha1", "resourcepack.sha1", "");

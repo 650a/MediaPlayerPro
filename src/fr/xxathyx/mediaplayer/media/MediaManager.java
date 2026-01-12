@@ -126,6 +126,68 @@ public class MediaManager {
         playEntry(sender, screen, entry, noAudio);
     }
 
+    public void prepareMediaPlayback(String name, boolean noAudio, java.util.function.Consumer<MediaPlayback> onReady, java.util.function.Consumer<String> onError) {
+        MediaEntry entry = library.getEntry(name);
+        if (entry == null) {
+            if (onError != null) {
+                onError.accept("Unknown media: " + name);
+            }
+            return;
+        }
+
+        scheduler.runAsync(() -> {
+            try {
+                cacheManager.touch(entry);
+                library.save();
+                File videoFile = ensureVideoFile(entry);
+                File configFile = getVideoConfigFile(entry);
+                Video video = new Video(configFile);
+                if (!configFile.exists()) {
+                    if (!plugin.getFfprobe().isAvailable()) {
+                        scheduler.runSync(() -> {
+                            if (onError != null) {
+                                onError.accept(configuration.libraries_not_installed());
+                            }
+                        });
+                        return;
+                    }
+                    video.createConfiguration(videoFile);
+                }
+                if (!video.isLoaded()) {
+                    video.load();
+                    scheduler.runSync(() -> {
+                        if (onError != null) {
+                            onError.accept("Media is loading. Try again shortly.");
+                        }
+                    });
+                    return;
+                }
+                AudioTrack track = null;
+                boolean allowAudio = configuration.audio_enabled() && !noAudio;
+                if (allowAudio) {
+                    track = audioPackManager.prepare(entry, videoFile);
+                    library.save();
+                    if (track == null) {
+                        allowAudio = false;
+                    }
+                }
+                PlaybackOptions options = new PlaybackOptions(allowAudio, entry, track);
+                MediaPlayback playback = new MediaPlayback(video, options, entry);
+                scheduler.runSync(() -> {
+                    if (onReady != null) {
+                        onReady.accept(playback);
+                    }
+                });
+            } catch (IOException | org.bukkit.configuration.InvalidConfigurationException e) {
+                scheduler.runSync(() -> {
+                    if (onError != null) {
+                        onError.accept("Failed to prepare media: " + e.getMessage());
+                    }
+                });
+            }
+        });
+    }
+
     public void playUrl(CommandSender sender, Screen screen, String url, boolean noAudio) {
         String resolved = resolveUrl(sender, url);
         if (resolved == null) {

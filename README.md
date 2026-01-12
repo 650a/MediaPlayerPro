@@ -35,6 +35,14 @@ Root command: `/mediaplayer` (alias `/mp`).
 * `/mp pack status` - Show pack server status and current pack URL/SHA1.
 * `/mp pack rebuild` - Force a pack rebuild.
 * `/mp pack url` - Print pack URL + SHA1.
+* `/mp theatre room create <name> [screen...]` - Create a theatre room (optional screen list).
+* `/mp theatre room delete <name>` - Delete a theatre room.
+* `/mp theatre schedule add <room> <HH:MM> <mediaId> [repeat=daily|weekly|none]` - Schedule a show.
+* `/mp theatre schedule remove <room> <index|id>` - Remove a scheduled show.
+* `/mp theatre schedule list <room>` - List scheduled shows.
+* `/mp theatre play <room> <mediaId>` - Start a show in a room.
+* `/mp theatre stop <room>` - Stop a show in a room.
+* `/mp theatre doctor` - Theatre self-check and dependency status.
 
 Screen list entries open a Screen Control GUI with Play/Stop/Pause/Resume and scaling shortcuts.
 
@@ -47,6 +55,14 @@ Screen list entries open a Screen Control GUI with Play/Stop/Pause/Resume and sc
 * `mediaplayer.media.manage` - List cached media.
 * `mediaplayer.media.admin` - Add/remove URL media and play direct URLs.
 * `mediaplayer.pack.manage` - View/rebuild pack status and URL.
+* `mediaplayer.theatre.room.create` - Create theatre rooms.
+* `mediaplayer.theatre.room.delete` - Delete theatre rooms.
+* `mediaplayer.theatre.schedule.add` - Add theatre schedule entries.
+* `mediaplayer.theatre.schedule.remove` - Remove theatre schedule entries.
+* `mediaplayer.theatre.schedule.list` - List theatre schedule entries.
+* `mediaplayer.theatre.play` - Start a theatre show.
+* `mediaplayer.theatre.stop` - Stop a theatre show.
+* `mediaplayer.theatre.doctor` - Run theatre diagnostics.
 
 ## Minimal configuration
 
@@ -62,6 +78,15 @@ sources:
 
 audio:
   enabled: false
+
+theatre:
+  enabled: true
+  max-shows: 5
+  tick-interval: 1
+  audio-update-interval: 1
+  audience-check-interval: 20
+  default-zone-radius: 16
+  schedule-check-interval-seconds: 30
 
 resource_pack:
   url: ""
@@ -93,6 +118,13 @@ resource_pack:
 * `audio.chunk-seconds` - Chunk size for audio slicing.
 * `audio.codec` - Audio codec (vorbis default).
 * `audio.sample-rate` - Audio sample rate (48000 default).
+* `theatre.enabled` - Enable theatre mode features.
+* `theatre.max-shows` - Maximum concurrent theatre shows.
+* `theatre.tick-interval` - Tick interval for theatre show monitoring.
+* `theatre.audio-update-interval` - Audio listener refresh interval (ticks).
+* `theatre.audience-check-interval` - Audience zone refresh interval (ticks).
+* `theatre.default-zone-radius` - Default audio zone radius when room zone is unset.
+* `theatre.schedule-check-interval-seconds` - Schedule polling interval.
 * `resource_pack.url` - External host URL for packs when internal server is disabled.
 * `resource_pack.sha1` - Last generated pack SHA1.
 * `resource_pack.assets-hash` - Hash of current audio assets (used for rebuild detection).
@@ -112,6 +144,47 @@ Screens store per-screen data in `screens/<uuid>/<uuid>.yml`, including:
 * `screen.scale-mode` - `FIT`, `FILL`, or `STRETCH` (default: `FIT`).
 * `screen.audio.radius` - Audio radius around the speaker location.
 * `screen.audio.speaker.*` - Speaker location (world/x/y/z). Defaults to screen center.
+
+## Theatre mode
+
+Theatre mode adds rooms with isolated audio zones and scheduled shows. Rooms map to one or more existing screens.
+Create rooms, assign screens (optional during creation), then schedule shows or start them manually.
+
+Rooms and schedules are persisted in `plugins/MediaPlayer/theatre/rooms.yml` and `plugins/MediaPlayer/theatre/schedules.yml`.
+
+### Example rooms.yml
+
+```yaml
+rooms:
+  4f6aa5d4-1f1e-4ed9-9c32-3b3f7cc33c4a:
+    name: MainHall
+    screens:
+      - ScreenA
+      - ScreenB
+    audio-zone:
+      world: world
+      x: 100.5
+      y: 64.0
+      z: -30.5
+      radius: 20
+    seats:
+      - "world,101.0,64.0,-29.0"
+      - "world,102.0,64.0,-29.0"
+```
+
+### Example schedules.yml
+
+```yaml
+rooms:
+  4f6aa5d4-1f1e-4ed9-9c32-3b3f7cc33c4a:
+    entries:
+      5d6f8b07-4f86-4e4f-b9b5-1c5d64f4e7ac:
+        media-id: trailer
+        repeat: DAILY
+        enabled: true
+        next-run: "2025-01-01 18:30"
+        last-triggered: "2024-12-31 18:30"
+```
 
 ## Scaling modes
 
