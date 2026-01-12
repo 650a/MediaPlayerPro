@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
@@ -26,6 +27,10 @@ import fr.xxathyx.mediaplayer.resourcepack.EmbeddedPackServer;
 import fr.xxathyx.mediaplayer.render.ScalingMode;
 import fr.xxathyx.mediaplayer.screen.Screen;
 import fr.xxathyx.mediaplayer.screen.ScreenManager;
+import fr.xxathyx.mediaplayer.theatre.ShowRepeat;
+import fr.xxathyx.mediaplayer.theatre.ShowScheduleEntry;
+import fr.xxathyx.mediaplayer.theatre.TheatreManager;
+import fr.xxathyx.mediaplayer.theatre.TheatreRoom;
 import fr.xxathyx.mediaplayer.video.Video;
 
 public class MediaPlayerCommands implements CommandExecutor, TabCompleter {
@@ -223,6 +228,211 @@ public class MediaPlayerCommands implements CommandExecutor, TabCompleter {
                 sendDiagnostics(sender);
                 return true;
             }
+            case "theatre" -> {
+                TheatreManager theatreManager = plugin.getTheatreManager();
+                if (theatreManager == null) {
+                    sender.sendMessage(ChatColor.RED + "Theatre system is not available.");
+                    return true;
+                }
+                if (filteredArgs.size() < 2) {
+                    sendTheatreHelp(sender);
+                    return true;
+                }
+                switch (filteredArgs.get(1).toLowerCase()) {
+                    case "room" -> {
+                        if (filteredArgs.size() < 3) {
+                            sendTheatreRoomHelp(sender);
+                            return true;
+                        }
+                        switch (filteredArgs.get(2).toLowerCase()) {
+                            case "create" -> {
+                                if (!sender.hasPermission("mediaplayer.theatre.room.create")) {
+                                    sender.sendMessage(configuration.insufficient_permissions());
+                                    return true;
+                                }
+                                if (filteredArgs.size() < 4) {
+                                    sender.sendMessage(ChatColor.RED + "/mp theatre room create <name> [screen...]");
+                                    return true;
+                                }
+                                String name = filteredArgs.get(3);
+                                List<String> screens = new ArrayList<>();
+                                for (int i = 4; i < filteredArgs.size(); i++) {
+                                    String screenName = filteredArgs.get(i);
+                                    Screen screen = screenManager.getScreenByName(screenName);
+                                    if (screen == null) {
+                                        sender.sendMessage(ChatColor.YELLOW + "Unknown screen ignored: " + screenName);
+                                    } else {
+                                        screens.add(screen.getName());
+                                    }
+                                }
+                                theatreManager.createRoom(sender, name, screens);
+                                return true;
+                            }
+                            case "delete" -> {
+                                if (!sender.hasPermission("mediaplayer.theatre.room.delete")) {
+                                    sender.sendMessage(configuration.insufficient_permissions());
+                                    return true;
+                                }
+                                if (filteredArgs.size() < 4) {
+                                    sender.sendMessage(ChatColor.RED + "/mp theatre room delete <name>");
+                                    return true;
+                                }
+                                theatreManager.deleteRoom(sender, filteredArgs.get(3));
+                                return true;
+                            }
+                            default -> {
+                                sendTheatreRoomHelp(sender);
+                                return true;
+                            }
+                        }
+                    }
+                    case "schedule" -> {
+                        if (filteredArgs.size() < 3) {
+                            sendTheatreScheduleHelp(sender);
+                            return true;
+                        }
+                        String action = filteredArgs.get(2).toLowerCase();
+                        if (action.equals("add")) {
+                            if (!sender.hasPermission("mediaplayer.theatre.schedule.add")) {
+                                sender.sendMessage(configuration.insufficient_permissions());
+                                return true;
+                            }
+                            if (filteredArgs.size() < 6) {
+                                sender.sendMessage(ChatColor.RED + "/mp theatre schedule add <room> <HH:MM> <mediaId> [repeat=daily|weekly|none]");
+                                return true;
+                            }
+                            TheatreRoom room = theatreManager.getRoom(filteredArgs.get(3));
+                            if (room == null) {
+                                sender.sendMessage(ChatColor.RED + "Unknown room: " + filteredArgs.get(3));
+                                return true;
+                            }
+                            java.time.LocalTime time;
+                            try {
+                                time = java.time.LocalTime.parse(filteredArgs.get(4), java.time.format.DateTimeFormatter.ofPattern("HH:mm"));
+                            } catch (Exception e) {
+                                sender.sendMessage(ChatColor.RED + "Invalid time format. Use HH:MM.");
+                                return true;
+                            }
+                            String repeatValue = "none";
+                            if (filteredArgs.size() >= 7) {
+                                String raw = filteredArgs.get(6).toLowerCase(Locale.ROOT);
+                                repeatValue = raw.startsWith("repeat=") ? raw.substring("repeat=".length()) : raw;
+                            }
+                            ShowRepeat repeat = ShowRepeat.fromString(repeatValue);
+                            ShowScheduleEntry entry = theatreManager.addSchedule(room, time, repeat, filteredArgs.get(5));
+                            if (entry == null) {
+                                sender.sendMessage(ChatColor.RED + "Failed to add schedule.");
+                                return true;
+                            }
+                            sender.sendMessage(ChatColor.GREEN + "Schedule added: " + entry.getId());
+                            return true;
+                        }
+                        if (action.equals("remove")) {
+                            if (!sender.hasPermission("mediaplayer.theatre.schedule.remove")) {
+                                sender.sendMessage(configuration.insufficient_permissions());
+                                return true;
+                            }
+                            if (filteredArgs.size() < 5) {
+                                sender.sendMessage(ChatColor.RED + "/mp theatre schedule remove <room> <index|id>");
+                                return true;
+                            }
+                            TheatreRoom room = theatreManager.getRoom(filteredArgs.get(3));
+                            if (room == null) {
+                                sender.sendMessage(ChatColor.RED + "Unknown room: " + filteredArgs.get(3));
+                                return true;
+                            }
+                            boolean removed = theatreManager.removeSchedule(room, filteredArgs.get(4));
+                            if (!removed) {
+                                sender.sendMessage(ChatColor.RED + "Schedule entry not found.");
+                                return true;
+                            }
+                            sender.sendMessage(ChatColor.GREEN + "Schedule removed.");
+                            return true;
+                        }
+                        if (action.equals("list")) {
+                            if (!sender.hasPermission("mediaplayer.theatre.schedule.list")) {
+                                sender.sendMessage(configuration.insufficient_permissions());
+                                return true;
+                            }
+                            if (filteredArgs.size() < 4) {
+                                sender.sendMessage(ChatColor.RED + "/mp theatre schedule list <room>");
+                                return true;
+                            }
+                            TheatreRoom room = theatreManager.getRoom(filteredArgs.get(3));
+                            if (room == null) {
+                                sender.sendMessage(ChatColor.RED + "Unknown room: " + filteredArgs.get(3));
+                                return true;
+                            }
+                            List<ShowScheduleEntry> entries = theatreManager.getSchedules(room);
+                            if (entries.isEmpty()) {
+                                sender.sendMessage(ChatColor.YELLOW + "No schedules for room " + room.getName() + ".");
+                                return true;
+                            }
+                            sender.sendMessage(ChatColor.GOLD + "Schedules for room " + room.getName() + ":");
+                            int index = 1;
+                            for (ShowScheduleEntry entry : entries) {
+                                String nextRun = entry.getNextRun() == null ? "n/a" : entry.getNextRun().format(ShowScheduleEntry.FORMATTER);
+                            sender.sendMessage(ChatColor.GRAY + "" + index + ") " + entry.getMediaId() + " at " + nextRun
+                                    + " (" + entry.getRepeat().name().toLowerCase(Locale.ROOT) + ", enabled=" + entry.isEnabled() + ", id=" + entry.getId() + ")");
+                                index++;
+                            }
+                            return true;
+                        }
+                        sendTheatreScheduleHelp(sender);
+                        return true;
+                    }
+                    case "play" -> {
+                        if (!sender.hasPermission("mediaplayer.theatre.play")) {
+                            sender.sendMessage(configuration.insufficient_permissions());
+                            return true;
+                        }
+                        if (filteredArgs.size() < 4) {
+                            sender.sendMessage(ChatColor.RED + "/mp theatre play <room> <mediaId>");
+                            return true;
+                        }
+                        TheatreRoom room = theatreManager.getRoom(filteredArgs.get(2));
+                        if (room == null) {
+                            sender.sendMessage(ChatColor.RED + "Unknown room: " + filteredArgs.get(2));
+                            return true;
+                        }
+                        theatreManager.playRoom(sender, room, filteredArgs.get(3));
+                        return true;
+                    }
+                    case "stop" -> {
+                        if (!sender.hasPermission("mediaplayer.theatre.stop")) {
+                            sender.sendMessage(configuration.insufficient_permissions());
+                            return true;
+                        }
+                        if (filteredArgs.size() < 3) {
+                            sender.sendMessage(ChatColor.RED + "/mp theatre stop <room>");
+                            return true;
+                        }
+                        TheatreRoom room = theatreManager.getRoom(filteredArgs.get(2));
+                        if (room == null) {
+                            sender.sendMessage(ChatColor.RED + "Unknown room: " + filteredArgs.get(2));
+                            return true;
+                        }
+                        theatreManager.stopShow(room);
+                        sender.sendMessage(ChatColor.GREEN + "Stopped show in room " + room.getName() + ".");
+                        return true;
+                    }
+                    case "doctor" -> {
+                        if (!sender.hasPermission("mediaplayer.theatre.doctor")) {
+                            sender.sendMessage(configuration.insufficient_permissions());
+                            return true;
+                        }
+                        sender.sendMessage(ChatColor.GOLD + "MediaPlayer theatre doctor:");
+                        for (String line : theatreManager.buildDoctorReport()) {
+                            sender.sendMessage(line);
+                        }
+                        return true;
+                    }
+                    default -> {
+                        sendTheatreHelp(sender);
+                        return true;
+                    }
+                }
+            }
             case "pack" -> {
                 if (!sender.hasPermission("mediaplayer.pack.manage")) {
                     sender.sendMessage(configuration.insufficient_permissions());
@@ -336,6 +546,10 @@ public class MediaPlayerCommands implements CommandExecutor, TabCompleter {
                 }
                 playbackManager.stopAll();
                 screenManager.loadAll();
+                TheatreManager theatreManager = plugin.getTheatreManager();
+                if (theatreManager != null) {
+                    theatreManager.reload();
+                }
                 sender.sendMessage(ChatColor.GREEN + "MediaPlayer reloaded.");
                 return true;
             }
@@ -355,7 +569,7 @@ public class MediaPlayerCommands implements CommandExecutor, TabCompleter {
         List<String> completions = new ArrayList<>();
         try {
             if (args.length == 1) {
-                List<String> candidates = List.of("screen", "media", "play", "stop", "pause", "resume", "scale", "reload", "diagnose", "pack");
+                List<String> candidates = List.of("screen", "media", "play", "stop", "pause", "resume", "scale", "reload", "diagnose", "pack", "theatre");
                 StringUtil.copyPartialMatches(args[0], candidates, completions);
             } else if (args.length == 2 && args[0].equalsIgnoreCase("screen")) {
                 List<String> candidates = List.of("create", "delete", "list");
@@ -366,12 +580,47 @@ public class MediaPlayerCommands implements CommandExecutor, TabCompleter {
             } else if (args.length == 2 && args[0].equalsIgnoreCase("pack")) {
                 List<String> candidates = List.of("status", "rebuild", "url");
                 StringUtil.copyPartialMatches(args[1], candidates, completions);
+            } else if (args.length == 2 && args[0].equalsIgnoreCase("theatre")) {
+                List<String> candidates = List.of("room", "schedule", "play", "stop", "doctor");
+                StringUtil.copyPartialMatches(args[1], candidates, completions);
             } else if (args.length == 2 && List.of("play", "stop", "pause", "resume", "scale").contains(args[0].toLowerCase())) {
                 List<String> candidates = new ArrayList<>();
                 for (Screen screen : plugin.getScreenManager().getScreens().values()) {
                     candidates.add(screen.getName());
                 }
                 StringUtil.copyPartialMatches(args[1], candidates, completions);
+            } else if (args.length == 3 && args[0].equalsIgnoreCase("theatre")) {
+                if (args[1].equalsIgnoreCase("room")) {
+                    List<String> candidates = List.of("create", "delete");
+                    StringUtil.copyPartialMatches(args[2], candidates, completions);
+                } else if (args[1].equalsIgnoreCase("schedule")) {
+                    List<String> candidates = List.of("add", "remove", "list");
+                    StringUtil.copyPartialMatches(args[2], candidates, completions);
+                } else if (List.of("play", "stop").contains(args[1].toLowerCase())) {
+                    List<String> candidates = new ArrayList<>();
+                    TheatreManager theatreManager = plugin.getTheatreManager();
+                    if (theatreManager != null) {
+                        for (TheatreRoom room : theatreManager.getRooms().values()) {
+                            candidates.add(room.getName());
+                        }
+                    }
+                    StringUtil.copyPartialMatches(args[2], candidates, completions);
+                }
+            } else if (args.length == 4 && args[0].equalsIgnoreCase("theatre") && args[1].equalsIgnoreCase("play")) {
+                List<String> candidates = new ArrayList<>();
+                for (fr.xxathyx.mediaplayer.media.MediaEntry entry : plugin.getMediaLibrary().listEntries()) {
+                    candidates.add(entry.getName());
+                }
+                StringUtil.copyPartialMatches(args[3], candidates, completions);
+            } else if (args.length == 4 && args[0].equalsIgnoreCase("theatre") && args[1].equalsIgnoreCase("schedule")) {
+                List<String> candidates = new ArrayList<>();
+                TheatreManager theatreManager = plugin.getTheatreManager();
+                if (theatreManager != null) {
+                    for (TheatreRoom room : theatreManager.getRooms().values()) {
+                        candidates.add(room.getName());
+                    }
+                }
+                StringUtil.copyPartialMatches(args[3], candidates, completions);
             } else if (args.length == 3 && args[0].equalsIgnoreCase("play")) {
                 List<String> candidates = List.of("media", "url");
                 StringUtil.copyPartialMatches(args[2], candidates, completions);
@@ -414,6 +663,14 @@ public class MediaPlayerCommands implements CommandExecutor, TabCompleter {
         sender.sendMessage(ChatColor.YELLOW + "/mp pack status");
         sender.sendMessage(ChatColor.YELLOW + "/mp pack rebuild");
         sender.sendMessage(ChatColor.YELLOW + "/mp pack url");
+        sender.sendMessage(ChatColor.YELLOW + "/mp theatre room create <name> [screen...]");
+        sender.sendMessage(ChatColor.YELLOW + "/mp theatre room delete <name>");
+        sender.sendMessage(ChatColor.YELLOW + "/mp theatre schedule add <room> <HH:MM> <mediaId> [repeat=daily|weekly|none]");
+        sender.sendMessage(ChatColor.YELLOW + "/mp theatre schedule remove <room> <index|id>");
+        sender.sendMessage(ChatColor.YELLOW + "/mp theatre schedule list <room>");
+        sender.sendMessage(ChatColor.YELLOW + "/mp theatre play <room> <mediaId>");
+        sender.sendMessage(ChatColor.YELLOW + "/mp theatre stop <room>");
+        sender.sendMessage(ChatColor.YELLOW + "/mp theatre doctor");
     }
 
     private void sendScreenHelp(CommandSender sender) {
@@ -428,6 +685,31 @@ public class MediaPlayerCommands implements CommandExecutor, TabCompleter {
         sender.sendMessage(ChatColor.YELLOW + "/mp media add <name> <url>");
         sender.sendMessage(ChatColor.YELLOW + "/mp media remove <name>");
         sender.sendMessage(ChatColor.YELLOW + "/mp media list");
+    }
+
+    private void sendTheatreHelp(CommandSender sender) {
+        sender.sendMessage(ChatColor.GOLD + "Theatre commands:");
+        sender.sendMessage(ChatColor.YELLOW + "/mp theatre room create <name> [screen...]");
+        sender.sendMessage(ChatColor.YELLOW + "/mp theatre room delete <name>");
+        sender.sendMessage(ChatColor.YELLOW + "/mp theatre schedule add <room> <HH:MM> <mediaId> [repeat=daily|weekly|none]");
+        sender.sendMessage(ChatColor.YELLOW + "/mp theatre schedule remove <room> <index|id>");
+        sender.sendMessage(ChatColor.YELLOW + "/mp theatre schedule list <room>");
+        sender.sendMessage(ChatColor.YELLOW + "/mp theatre play <room> <mediaId>");
+        sender.sendMessage(ChatColor.YELLOW + "/mp theatre stop <room>");
+        sender.sendMessage(ChatColor.YELLOW + "/mp theatre doctor");
+    }
+
+    private void sendTheatreRoomHelp(CommandSender sender) {
+        sender.sendMessage(ChatColor.GOLD + "Theatre room commands:");
+        sender.sendMessage(ChatColor.YELLOW + "/mp theatre room create <name> [screen...]");
+        sender.sendMessage(ChatColor.YELLOW + "/mp theatre room delete <name>");
+    }
+
+    private void sendTheatreScheduleHelp(CommandSender sender) {
+        sender.sendMessage(ChatColor.GOLD + "Theatre schedule commands:");
+        sender.sendMessage(ChatColor.YELLOW + "/mp theatre schedule add <room> <HH:MM> <mediaId> [repeat=daily|weekly|none]");
+        sender.sendMessage(ChatColor.YELLOW + "/mp theatre schedule remove <room> <index|id>");
+        sender.sendMessage(ChatColor.YELLOW + "/mp theatre schedule list <room>");
     }
 
     private void sendPackHelp(CommandSender sender) {
