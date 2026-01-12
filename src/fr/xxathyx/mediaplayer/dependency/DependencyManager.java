@@ -907,7 +907,7 @@ public class DependencyManager {
             return;
         }
         if (Bukkit.isPrimaryThread()) {
-            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> downloadFfmpegBundle(forceDownload, ignoreSystem));
+            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> downloadFfmpegBundle(forceDownload, ignoreSystem, preserveOnFailure));
             return;
         }
         if (!forceDownload && !ignoreSystem) {
