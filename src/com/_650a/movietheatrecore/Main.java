@@ -2,6 +2,7 @@ package com._650a.movietheatrecore;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -36,6 +37,7 @@ import com._650a.movietheatrecore.actionbar.ActionBarVersion;
 import com._650a.movietheatrecore.audio.util.AudioUtilVersion;
 import com._650a.movietheatrecore.audio.AudioPackManager;
 import com._650a.movietheatrecore.commands.MovieTheatreCoreCommands;
+import com._650a.movietheatrecore.commands.LegacyCommandListener;
 import com._650a.movietheatrecore.configuration.Configuration;
 import com._650a.movietheatrecore.configuration.updater.ConfigurationUpdater;
 import com._650a.movietheatrecore.dependency.DependencyManager;
@@ -45,6 +47,8 @@ import com._650a.movietheatrecore.group.Group;
 import com._650a.movietheatrecore.gui.GuiSupport;
 import com._650a.movietheatrecore.gui.GuiSupportFactory;
 import com._650a.movietheatrecore.gui.LegacyGuiSupport;
+import com._650a.movietheatrecore.gui.AdminMenuListener;
+import com._650a.movietheatrecore.gui.AdminToolListener;
 import com._650a.movietheatrecore.media.MediaLibrary;
 import com._650a.movietheatrecore.media.MediaManager;
 import com._650a.movietheatrecore.playback.PlaybackManager;
@@ -57,6 +61,11 @@ import com._650a.movietheatrecore.screen.ScreenManager;
 import com._650a.movietheatrecore.screen.listeners.PlayerBreakScreen;
 import com._650a.movietheatrecore.screen.listeners.PlayerDamageScreen;
 import com._650a.movietheatrecore.screen.listeners.PlayerDisconnectScreen;
+import com._650a.movietheatrecore.interfaces.listeners.InventoryClickContents;
+import com._650a.movietheatrecore.interfaces.listeners.InventoryClickPanel;
+import com._650a.movietheatrecore.interfaces.listeners.InventoryClickScreens;
+import com._650a.movietheatrecore.interfaces.listeners.InventoryClickVideos;
+import com._650a.movietheatrecore.interfaces.listeners.InventoryClosePanel;
 import com._650a.movietheatrecore.tasks.TaskAsyncLoadConfigurations;
 import com._650a.movietheatrecore.tasks.TaskAsyncLoadImages;
 import com._650a.movietheatrecore.translation.Translater;
@@ -203,6 +212,7 @@ public class Main extends JavaPlugin implements Listener {
 			migrateLegacyDataFolder();
 			configuration = new Configuration();
 			configuration.setup();
+			ensureUserGuideExported();
 
 			dependencyManager = new DependencyManager(this);
 			ffmpeg = new Ffmpeg();
@@ -289,6 +299,15 @@ public class Main extends JavaPlugin implements Listener {
 
 	        guiSupport = GuiSupportFactory.create(this);
 	        guiSupport.register();
+
+	        Bukkit.getServer().getPluginManager().registerEvents(new LegacyCommandListener(), this);
+	        Bukkit.getServer().getPluginManager().registerEvents(new AdminToolListener(this), this);
+	        Bukkit.getServer().getPluginManager().registerEvents(new AdminMenuListener(this), this);
+	        Bukkit.getServer().getPluginManager().registerEvents(new InventoryClickVideos(), this);
+	        Bukkit.getServer().getPluginManager().registerEvents(new InventoryClickScreens(), this);
+	        Bukkit.getServer().getPluginManager().registerEvents(new InventoryClickPanel(), this);
+	        Bukkit.getServer().getPluginManager().registerEvents(new InventoryClickContents(), this);
+	        Bukkit.getServer().getPluginManager().registerEvents(new InventoryClosePanel(), this);
 
 			Bukkit.getServer().getPluginManager().registerEvents(new PlayerBreakScreen(), this);
 			Bukkit.getServer().getPluginManager().registerEvents(new PlayerDamageScreen(), this);
@@ -406,6 +425,27 @@ public class Main extends JavaPlugin implements Listener {
 				throw ioException;
 			}
 			throw e;
+		}
+	}
+
+	private void ensureUserGuideExported() {
+		File guideFile = new File(getDataFolder(), "USER_GUIDE.md");
+		if (guideFile.exists()) {
+			return;
+		}
+		try (InputStream input = getResource("USER_GUIDE.md")) {
+			if (input == null) {
+				Bukkit.getLogger().warning("[MovieTheatreCore]: USER_GUIDE.md is missing from the plugin jar.");
+				return;
+			}
+			guideFile.getParentFile().mkdirs();
+			Files.copy(input, guideFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+			guideFile.setReadable(true, false);
+			guideFile.setWritable(false, false);
+			guideFile.setReadOnly();
+			Bukkit.getLogger().info("[MovieTheatreCore]: USER_GUIDE.md exported to " + guideFile.getPath());
+		} catch (IOException e) {
+			Bukkit.getLogger().warning("[MovieTheatreCore]: Failed to export USER_GUIDE.md: " + e.getMessage());
 		}
 	}
 	

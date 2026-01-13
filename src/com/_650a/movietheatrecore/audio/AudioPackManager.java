@@ -28,6 +28,7 @@ import com._650a.movietheatrecore.media.MediaEntry;
 import com._650a.movietheatrecore.resourcepack.EmbeddedPackServer;
 import com._650a.movietheatrecore.resourcepack.ResourcePack;
 import com._650a.movietheatrecore.util.Scheduler;
+import com._650a.movietheatrecore.util.ZipUtil;
 
 public class AudioPackManager {
 
@@ -58,13 +59,14 @@ public class AudioPackManager {
         if (!configuration.audio_enabled()) {
             return null;
         }
+        boolean entryChanged = ensureAudioChunks(entry, mediaFile);
+
         String packUrl = resolvePackUrl();
         if (packUrl == null || packUrl.isBlank()) {
             warnMissingPackUrl();
             return null;
         }
 
-        boolean entryChanged = ensureAudioChunks(entry, mediaFile);
         ensurePackReady(entryChanged);
 
         int chunkCount = entry.getAudioChunks();
@@ -180,7 +182,7 @@ public class AudioPackManager {
         writeSoundsJson(packFolder, soundsMap);
 
         File tempZip = new File(configuration.getTempDir(), "pack.zip.tmp");
-        dev.jeka.core.api.file.JkPathTree.of(packFolder.toPath()).zipTo(tempZip.toPath());
+        ZipUtil.zipDirectory(packFolder.toPath(), tempZip.toPath());
         Files.move(tempZip.toPath(), packFile.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
 
         String sha1 = computeSha1(packFile);

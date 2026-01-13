@@ -313,11 +313,14 @@ public class Screen {
 	public FileConfiguration getConfigFile() {
 		
 		fileconfiguration = new YamlConfiguration();
-		
+		if (!file.exists()) {
+			Bukkit.getLogger().warning("[MovieTheatreCore]: Missing screen configuration for " + file.getName() + ". Removing stale screen entry.");
+			return fileconfiguration;
+		}
 		try {
 			fileconfiguration.load(file);
 		}catch (IOException | InvalidConfigurationException e) {
-			e.printStackTrace();
+			Bukkit.getLogger().warning("[MovieTheatreCore]: Failed to read screen configuration " + file.getName() + ": " + e.getMessage());
 		}
 		return fileconfiguration;
     }

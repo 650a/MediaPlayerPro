@@ -121,7 +121,7 @@ public class Configuration {
 			fileconfiguration.set("dependencies.install.update-check-hours", 24);
 
 			fileconfiguration.set("youtube.use-js-runtime", true);
-			fileconfiguration.set("youtube.cookies-path", "plugins/MovieTheatreCore/cookies.txt");
+			fileconfiguration.set("youtube.cookies-path", "plugins/MovieTheatreCore/youtube-cookies.txt");
 			fileconfiguration.set("youtube.require-cookies", false);
 
 			fileconfiguration.set("audio.enabled", false);
@@ -204,6 +204,7 @@ public class Configuration {
 			fileconfiguration.load(configurationFile);
 			if(migrateConfiguration(fileconfiguration)) {
 				fileconfiguration.save(configurationFile);
+				Bukkit.getLogger().info("[MovieTheatreCore]: configuration.yml migrated with new defaults (existing values preserved).");
 			}
 		}catch (InvalidConfigurationException e) {
 			Bukkit.getLogger().warning("[MovieTheatreCore]: Invalid configuration.yml. Check for unquoted wildcards like *.domain.com; allowlist entries will be ignored until fixed.");
@@ -613,7 +614,7 @@ public class Configuration {
 	}
 
 	public String youtube_cookies_path() {
-		String value = getStringValue("youtube.cookies-path", null, "plugins/MovieTheatreCore/cookies.txt");
+		String value = getStringValue("youtube.cookies-path", null, "plugins/MovieTheatreCore/youtube-cookies.txt");
 		if(value == null || value.isBlank()) {
 			return media_youtube_cookies_path();
 		}
@@ -807,7 +808,7 @@ public class Configuration {
 		changed |= ensureBoolean(configuration, "dependencies.install.auto-update", "general.auto-update-libraries", true);
 		changed |= ensureLong(configuration, "dependencies.install.update-check-hours", null, 24L);
 		changed |= ensureBoolean(configuration, "youtube.use-js-runtime", null, true);
-		changed |= ensureString(configuration, "youtube.cookies-path", "sources.youtube-cookies-path", "plugins/MovieTheatreCore/cookies.txt");
+		changed |= ensureString(configuration, "youtube.cookies-path", "sources.youtube-cookies-path", "plugins/MovieTheatreCore/youtube-cookies.txt");
 		changed |= ensureBoolean(configuration, "youtube.require-cookies", null, false);
 
 		if(!hasAllowlistMode) {
@@ -1356,6 +1357,18 @@ public class Configuration {
 	
 	public String item_remote_lore() {
 		return getMessage(getMessagesFile().getString("messages.item.remote.lore"));
+	}
+
+	public String item_admin_tool_name() {
+		return getMessage(getMessagesFile().getString("messages.item.admin-tool.name"));
+	}
+
+	public String item_admin_tool_lore() {
+		return getMessage(getMessagesFile().getString("messages.item.admin-tool.lore"));
+	}
+
+	public String legacy_command_notice() {
+		return getMessage(getMessagesFile().getString("messages.legacy-command"));
 	}
 	
 	public String item_load_name() {

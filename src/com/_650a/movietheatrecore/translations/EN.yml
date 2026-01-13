@@ -111,6 +111,7 @@ messages:
     of frames."
   image-already-rendered: "&cThe rendering of the &l%image% &ahas already been done, do
     /image give &l%image%&c."
+  legacy-command: "&eMovieTheatreCore commands have changed. Use &l/mtc &eor &l/movietheatrecore&e."
   item:
     previous-page:
       name: "&4&lPrevious-page"
@@ -130,6 +131,9 @@ messages:
     remote:
       name: "&2&lPause or continue"
       lore: "&aClick here to pause or continue the video."
+    admin-tool:
+      name: "&6&lMovieTheatreCore Admin Tool"
+      lore: "&eRight-click to open the admin console."
     load:
       name: "&6&lLoad"
       lore: "&eClick here to load the video."

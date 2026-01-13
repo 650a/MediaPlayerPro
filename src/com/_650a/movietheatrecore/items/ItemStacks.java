@@ -137,6 +137,30 @@ public class ItemStacks {
 		
 	    return play;
 	}
+
+	/**
+	 * Gets the MovieTheatreCore admin tool item.
+	 *
+	 * @return An admin management item.
+	 */
+
+	public ItemStack adminTool() {
+		ItemStack tool = new ItemStack(Material.BONE, 1);
+		ItemMeta meta = tool.getItemMeta();
+		meta.setDisplayName(configuration.item_admin_tool_name());
+		meta.setLore(Arrays.asList(configuration.item_admin_tool_lore()));
+		meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+		tool.setItemMeta(meta);
+		return tool;
+	}
+
+	public boolean isAdminTool(ItemStack item) {
+		if (item == null || !item.hasItemMeta()) {
+			return false;
+		}
+		ItemMeta meta = item.getItemMeta();
+		return meta.hasDisplayName() && meta.getDisplayName().equals(configuration.item_admin_tool_name());
+	}
 	
 	/** 
 	* Gets an {@link ItemStack} corresponding to a switcher icon in a interface {@link Inventory}.

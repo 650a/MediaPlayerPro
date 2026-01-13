@@ -9,7 +9,7 @@ api-version: 1.13
 commands:
   movietheatrecore:
     description: "MovieTheatreCore root command."
-    aliases: [mtc, theatre, mp]
+    aliases: [mtc]
     permission: movietheatrecore.command
 permissions:
   movietheatrecore.permission.admin:
@@ -21,7 +21,7 @@ permissions:
   movietheatrecore.playback:
     description: Control playback on screens.
   movietheatrecore.admin:
-    description: Reload MovieTheatreCore.
+    description: Reload MovieTheatreCore and access the admin tool.
   movietheatrecore.media.manage:
     description: Manage cached media entries.
   movietheatrecore.media.admin:

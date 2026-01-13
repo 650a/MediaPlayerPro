@@ -115,6 +115,12 @@
         </includes>
       </resource>
       <resource>
+        <directory>.</directory>
+        <includes>
+          <include>USER_GUIDE.md</include>
+        </includes>
+      </resource>
+      <resource>
         <directory>src/com/_650a/movietheatrecore/translations</directory>
         <includes>
           <include>*.yml</include>
