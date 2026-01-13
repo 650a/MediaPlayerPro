@@ -57,6 +57,13 @@ public class ScreenManager {
         for (File file : files) {
             File screenConfiguration = new File(configuration.getScreensFolder() + "/" + file.getName(), file.getName() + ".yml");
             if (!screenConfiguration.exists()) {
+                Bukkit.getLogger().warning("[MovieTheatreCore]: Screen entry " + file.getName() + " is missing its configuration. Cleaning up.");
+                if (!file.delete()) {
+                    try {
+                        org.apache.commons.io.FileUtils.deleteDirectory(file);
+                    } catch (Exception ignored) {
+                    }
+                }
                 continue;
             }
 

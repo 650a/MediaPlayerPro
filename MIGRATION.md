@@ -6,7 +6,7 @@ This release introduces a simplified command set, a new playback pipeline with a
 
 ## Command changes
 
-* **New root command:** `/movietheatrecore` (aliases `/mtc`, `/theatre`, `/mp`).
+* **New root command:** `/movietheatrecore` (alias `/mtc`).
 * Legacy commands such as `/video`, `/screen`, `/image`, and their GUI variants are no longer registered.
 
 Use:
@@ -18,12 +18,13 @@ Use:
 * `/mtc media remove <name>`
 * `/mtc media list`
 * `/mtc play <screen> <source>`
-* `/mtc play <screen> media <name> [--noaudio]`
-* `/mtc play <screen> url <url> [--noaudio]`
+* `/mtc play <screen> media <name>`
+* `/mtc play <screen> url <url>`
 * `/mtc stop <screen>`
 * `/mtc pause <screen>` / `/mtc resume <screen>`
 * `/mtc scale <screen> <fit|fill|stretch>`
 * `/mtc reload`
+* `/mtc admin`
 
 ## Screen scaling
 
@@ -52,7 +53,7 @@ Use:
    * `movietheatrecore.media.admin`
 2. (Optional) Set scaling mode per screen with `/mtc scale <screen> <fit|fill|stretch>`.
 3. Configure `media.allowed-domains` (or `sources.allowed-domains`) before using URL-based media.
-4. If you want vanilla audio, enable `audio.enabled` and provide `resource_pack.url`.
+4. If you want vanilla audio, enable `audio.enabled` and provide `resource_pack.url` (audio is automatic once enabled).
 5. No configuration migration is required beyond ensuring `screen.scale-mode` exists (auto-added on load).
 
 ## Configuration format update
@@ -79,7 +80,7 @@ On load, MovieTheatreCore maps existing legacy keys into the new structure and p
 ### Required changes
 
 * If you use the allowlist, explicitly set `sources.allowlist-mode: STRICT` and list domains in `sources.allowed-domains`.
-* For YouTube reliability, set `sources.youtube-cookies-path` to a valid cookies file (see README).
+* For YouTube reliability, set `youtube.cookies-path` to `plugins/MovieTheatreCore/youtube-cookies.txt` (see README).
 
 ### Required changes
 

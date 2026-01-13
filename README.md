@@ -4,7 +4,7 @@ MovieTheatreCore is a commercial, closed-source multi-room cinema plugin for Min
 
 ## User Guide
 
-See the full [MovieTheatreCore User Guide](docs/USER_GUIDE.md) for installation, setup, and command examples.
+See the full [MovieTheatreCore User Guide](USER_GUIDE.md) for installation, setup, and command examples.
 
 ## Commercial License & Ownership
 
@@ -28,6 +28,17 @@ MovieTheatreCore is distributed only through official marketplace listings. Inst
 - Automatic, offline-friendly dependency installer for ffmpeg/ffprobe/yt-dlp/deno.
 - Audio resource pack generation with optional embedded pack server.
 - Compatible with Minecraft 1.8.8 (Java 17) through the latest releases.
+
+## Permissions
+
+MovieTheatreCore enforces permissions on every command and GUI action:
+
+- `movietheatrecore.command` — Access `/mtc`.
+- `movietheatrecore.admin` — Reload and admin tool access (`/mtc admin`).
+- `movietheatrecore.screen.manage` — Create/delete screens and change scale.
+- `movietheatrecore.playback` — Play/pause/stop playback.
+- `movietheatrecore.media.manage` — View/manage cached media entries.
+- `movietheatrecore.media.admin` — Add/remove media URLs and play direct URLs.
 
 ## QUICKSTART
 
@@ -57,18 +68,17 @@ MovieTheatreCore is distributed only through official marketplace listings. Inst
 
 ### YouTube cookies (optional)
 
-If YouTube playback requires cookies, export a cookies file and set:
+If YouTube playback is blocked, export cookies from your browser and save them as:
 
-```yaml
-youtube:
-  cookies-path: "plugins/MovieTheatreCore/cookies.txt"
+```
+plugins/MovieTheatreCore/youtube-cookies.txt
 ```
 
-MovieTheatreCore passes `--cookies <path>` to the resolver when the file exists.
+MovieTheatreCore will warn you if the cookies are expired and continue to run yt-dlp in tiered mode.
 
-### Audio resource packs (high level)
+### Audio resource packs (fully automatic)
 
-When `audio.enabled: true`, MovieTheatreCore generates an on-demand resource pack with per-media audio chunks. You can:
+When `audio.enabled: true`, MovieTheatreCore automatically extracts audio for new media and builds an on-demand resource pack. You can:
 
 - Provide a static pack URL (set `resource_pack.url`), **or**
 - Enable the built-in pack server (`resource_pack.server.enabled: true`).

@@ -2,10 +2,13 @@ package com._650a.movietheatrecore.media;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -69,12 +72,8 @@ public class MediaManager {
             }
         }
         scheduler.runAsync(() -> {
-            String resolved = resolveUrl(sender, url);
+            String resolved = resolveAndValidateUrl(sender, url);
             if (resolved == null) {
-                return;
-            }
-            if (!isAllowedUrl(resolved)) {
-                scheduler.runSync(() -> sender.sendMessage(ChatColor.RED + "URL not allowed by sources.allowlist-mode (STRICT)."));
                 return;
             }
             DependencyManager.ResolvedBinary ffprobe = plugin.getDependencyManager().resolveBinary(DependencyManager.BinaryType.FFPROBE, true);
@@ -90,6 +89,10 @@ public class MediaManager {
                 Video video = new Video(configFile);
                 if (!configFile.exists()) {
                     video.createConfiguration(videoFile);
+                }
+                if (configuration.audio_enabled()) {
+                    audioPackManager.prepare(entry, videoFile);
+                    library.save();
                 }
                 library.addEntry(entry);
                 reloadVideos();
@@ -133,16 +136,16 @@ public class MediaManager {
         }
     }
 
-    public void playMedia(CommandSender sender, Screen screen, String name, boolean noAudio) {
+    public void playMedia(CommandSender sender, Screen screen, String name) {
         MediaEntry entry = library.getEntry(name);
         if (entry == null) {
             sender.sendMessage(ChatColor.RED + "Unknown media: " + name);
             return;
         }
-        playEntry(sender, screen, entry, noAudio);
+        playEntry(sender, screen, entry);
     }
 
-    public void prepareMediaPlayback(String name, boolean noAudio, java.util.function.Consumer<MediaPlayback> onReady, java.util.function.Consumer<String> onError) {
+    public void prepareMediaPlayback(String name, java.util.function.Consumer<MediaPlayback> onReady, java.util.function.Consumer<String> onError) {
         MediaEntry entry = library.getEntry(name);
         if (entry == null) {
             if (onError != null) {
@@ -180,7 +183,7 @@ public class MediaManager {
                     return;
                 }
                 AudioTrack track = null;
-                boolean allowAudio = configuration.audio_enabled() && !noAudio;
+                boolean allowAudio = configuration.audio_enabled();
                 if (allowAudio) {
                     track = audioPackManager.prepare(entry, videoFile);
                     library.save();
@@ -205,20 +208,16 @@ public class MediaManager {
         });
     }
 
-    public void playUrl(CommandSender sender, Screen screen, String url, boolean noAudio) {
+    public void playUrl(CommandSender sender, Screen screen, String url) {
         scheduler.runAsync(() -> {
-            String resolved = resolveUrl(sender, url);
+            String resolved = resolveAndValidateUrl(sender, url);
             if (resolved == null) {
-                return;
-            }
-            if (!isAllowedUrl(resolved)) {
-                scheduler.runSync(() -> sender.sendMessage(ChatColor.RED + "URL not allowed by sources.allowlist-mode (STRICT)."));
                 return;
             }
             String urlHash = Integer.toHexString(resolved.hashCode());
             MediaEntry entry = library.getCachedByUrl(urlHash);
             if (entry != null && cacheManager.getCacheFile(entry).exists()) {
-                scheduler.runSync(() -> playEntry(sender, screen, entry, noAudio));
+                scheduler.runSync(() -> playEntry(sender, screen, entry));
                 return;
             }
 
@@ -228,7 +227,7 @@ public class MediaManager {
                 library.addUrlCache(urlHash, downloaded);
                 ensureVideoFile(downloaded);
                 reloadVideos();
-                scheduler.runSync(() -> playEntry(sender, screen, downloaded, noAudio));
+                scheduler.runSync(() -> playEntry(sender, screen, downloaded));
             } catch (IOException e) {
                 scheduler.runSync(() -> sender.sendMessage(ChatColor.RED + "Failed to download URL: " + e.getMessage()));
             }
@@ -247,7 +246,7 @@ public class MediaManager {
         return downloaded;
     }
 
-    private void playEntry(CommandSender sender, Screen screen, MediaEntry entry, boolean noAudio) {
+    private void playEntry(CommandSender sender, Screen screen, MediaEntry entry) {
         scheduler.runAsync(() -> {
             try {
                 cacheManager.touch(entry);
@@ -269,7 +268,7 @@ public class MediaManager {
                     return;
                 }
                 AudioTrack track = null;
-                boolean allowAudio = configuration.audio_enabled() && !noAudio;
+                boolean allowAudio = configuration.audio_enabled();
                 if (allowAudio) {
                     track = audioPackManager.prepare(entry, videoFile);
                     library.save();
@@ -333,6 +332,66 @@ public class MediaManager {
         scheduler.runSync(() -> new TaskAsyncLoadConfigurations().runTaskAsynchronously(plugin));
     }
 
+    private String resolveAndValidateUrl(CommandSender sender, String url) {
+        String resolved = resolveUrl(sender, url);
+        if (resolved == null) {
+            return null;
+        }
+        if (!isAllowedUrl(resolved)) {
+            scheduler.runSync(() -> sender.sendMessage(ChatColor.RED + "URL not allowed by sources.allowlist-mode (STRICT)."));
+            return null;
+        }
+        String error = validateMediaUrl(resolved);
+        if (error != null) {
+            scheduler.runSync(() -> sender.sendMessage(ChatColor.RED + error));
+            return null;
+        }
+        return resolved;
+    }
+
+    private String validateMediaUrl(String url) {
+        URI uri;
+        try {
+            uri = new URI(url);
+        } catch (URISyntaxException e) {
+            return "Invalid URL format. Use a YouTube link, direct MP4/WEBM, or MediaFire direct download link.";
+        }
+        String scheme = uri.getScheme();
+        if (scheme == null || !(scheme.equalsIgnoreCase("http") || scheme.equalsIgnoreCase("https"))) {
+            return "Only http/https URLs are supported.";
+        }
+        String host = uri.getHost();
+        if (host == null || host.isBlank()) {
+            return "URL must include a valid host.";
+        }
+
+        String normalizedHost = host.toLowerCase(Locale.ROOT);
+        String extension = FilenameUtils.getExtension(uri.getPath()).toLowerCase(Locale.ROOT);
+        boolean extensionAllowed = extension.equals("mp4") || extension.equals("webm");
+
+        MediaHeadInfo head = fetchHeadInfo(url);
+        if (head != null && head.statusCode >= 200 && head.statusCode < 400) {
+            String contentType = head.contentType == null ? "" : head.contentType.toLowerCase(Locale.ROOT);
+            boolean contentTypeVideo = contentType.contains("video/mp4") || contentType.contains("video/webm");
+            boolean contentTypeHtml = contentType.contains("text/html");
+            if (contentTypeVideo) {
+                return null;
+            }
+            if (contentTypeHtml) {
+                return "URL does not point to a downloadable MP4/WEBM stream.";
+            }
+            if (extensionAllowed) {
+                return null;
+            }
+        }
+
+        if (extensionAllowed || normalizedHost.contains("googlevideo.com")) {
+            return null;
+        }
+
+        return "URL must point to a direct MP4/WEBM file (including MediaFire direct links).";
+    }
+
     private String resolveUrl(CommandSender sender, String url) {
         if (!isYoutubeUrl(url)) {
             return url;
@@ -348,22 +407,27 @@ public class MediaManager {
         try {
             List<String> command = new java.util.ArrayList<>();
             command.add(resolver.getPath().toString());
-            String cookiesPath = configuration.youtube_cookies_path();
-            if (cookiesPath == null || cookiesPath.isBlank()) {
-                scheduler.runSync(() -> sender.sendMessage(ChatColor.YELLOW + "No cookies file configured. Set youtube.cookies-path to reduce YouTube bot checks."));
-            } else {
-                File cookiesFile = new File(cookiesPath);
-                if (cookiesFile.exists() && cookiesFile.canRead()) {
-                    command.add("--cookies");
-                    command.add(cookiesFile.getAbsolutePath());
-                } else if (configuration.youtube_require_cookies()) {
-                    scheduler.runSync(() -> sender.sendMessage(ChatColor.RED + "Cookies file required but missing/unreadable: " + cookiesFile.getPath()));
-                    lastResolverExitCode = null;
-                    lastResolverError = "cookies file required";
-                    return null;
-                } else {
-                    scheduler.runSync(() -> sender.sendMessage(ChatColor.RED + "Cookies file missing or unreadable: " + cookiesFile.getPath() + ". Add cookies to avoid YouTube bot checks."));
+            File cookiesFile = resolveCookiesFile();
+            CookieStatus cookieStatus = null;
+            boolean cookiesUsed = false;
+            if (cookiesFile != null && cookiesFile.exists() && cookiesFile.canRead()) {
+                cookieStatus = evaluateCookies(cookiesFile);
+                if (cookieStatus.expired) {
+                    scheduler.runSync(() -> sender.sendMessage(ChatColor.YELLOW + "YouTube cookies appear expired. Export a fresh youtube-cookies.txt before playback fails."));
+                } else if (!cookieStatus.hasEntries) {
+                    scheduler.runSync(() -> sender.sendMessage(ChatColor.YELLOW + "YouTube cookies file is empty. Export a new youtube-cookies.txt if playback fails."));
                 }
+                command.add("--cookies");
+                command.add(cookiesFile.getAbsolutePath());
+                cookiesUsed = true;
+            } else if (configuration.youtube_require_cookies()) {
+                String path = cookiesFile == null ? "youtube-cookies.txt" : cookiesFile.getPath();
+                scheduler.runSync(() -> sender.sendMessage(ChatColor.RED + "Cookies file required but missing/unreadable: " + path));
+                lastResolverExitCode = null;
+                lastResolverError = "cookies file required";
+                return null;
+            } else {
+                scheduler.runSync(() -> sender.sendMessage(ChatColor.YELLOW + "Running yt-dlp without cookies. If YouTube blocks playback, add youtube-cookies.txt to the plugin folder."));
             }
             if (configuration.youtube_use_js_runtime()) {
                 DependencyManager.ResolvedBinary deno = dependencyManager.resolveBinary(DependencyManager.BinaryType.DENO, true);
@@ -393,7 +457,14 @@ public class MediaManager {
             lastResolverError = errorOutput;
             if (exitCode != 0 || output.isEmpty()) {
                 Bukkit.getLogger().warning("[MovieTheatreCore]: YouTube resolver exited with code " + exitCode + ". stderr: " + errorOutput);
-                scheduler.runSync(() -> sender.sendMessage(ChatColor.RED + "Resolver failed to return a direct URL."));
+                String message = "Resolver failed to return a direct URL.";
+                if (!cookiesUsed) {
+                    message = "YouTube blocked this request without cookies. Add youtube-cookies.txt or use a direct MP4/WEBM URL.";
+                } else if (cookieStatus != null && cookieStatus.expired) {
+                    message = "YouTube cookies are expired. Export a fresh youtube-cookies.txt and try again.";
+                }
+                String finalMessage = message;
+                scheduler.runSync(() -> sender.sendMessage(ChatColor.RED + finalMessage));
                 return null;
             }
             for (String line : output.split("\n")) {
@@ -412,6 +483,85 @@ public class MediaManager {
             lastResolverExitCode = null;
             lastResolverError = e.getMessage();
             scheduler.runSync(() -> sender.sendMessage(ChatColor.RED + "Resolver error: " + e.getMessage()));
+            return null;
+        }
+    }
+
+    private File resolveCookiesFile() {
+        String cookiesPath = configuration.youtube_cookies_path();
+        if (cookiesPath == null || cookiesPath.isBlank()) {
+            File defaultFile = new File(plugin.getDataFolder(), "youtube-cookies.txt");
+            return defaultFile.exists() ? defaultFile : null;
+        }
+        return new File(cookiesPath);
+    }
+
+    private CookieStatus evaluateCookies(File cookiesFile) {
+        boolean expired = false;
+        boolean hasEntries = false;
+        long now = System.currentTimeMillis() / 1000L;
+        try {
+            List<String> lines = Files.readAllLines(cookiesFile.toPath(), StandardCharsets.UTF_8);
+            for (String line : lines) {
+                if (line == null || line.isBlank() || line.startsWith("#")) {
+                    continue;
+                }
+                String[] parts = line.split("\t");
+                if (parts.length < 7) {
+                    continue;
+                }
+                hasEntries = true;
+                try {
+                    long expiry = Long.parseLong(parts[4]);
+                    if (expiry != 0 && expiry < now) {
+                        expired = true;
+                        break;
+                    }
+                } catch (NumberFormatException ignored) {
+                }
+            }
+        } catch (IOException e) {
+            return new CookieStatus(false, true);
+        }
+        return new CookieStatus(hasEntries, expired);
+    }
+
+    private MediaHeadInfo fetchHeadInfo(String url) {
+        int timeoutMs = configuration.media_download_timeout_seconds() * 1000;
+        try {
+            HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+            connection.setConnectTimeout(timeoutMs);
+            connection.setReadTimeout(timeoutMs);
+            connection.setInstanceFollowRedirects(true);
+            connection.setRequestMethod("HEAD");
+            int status = connection.getResponseCode();
+            String contentType = connection.getContentType();
+            connection.disconnect();
+            if (status == HttpURLConnection.HTTP_BAD_METHOD) {
+                return fetchRangeInfo(url, timeoutMs);
+            }
+            return new MediaHeadInfo(status, contentType);
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
+    private MediaHeadInfo fetchRangeInfo(String url, int timeoutMs) {
+        try {
+            HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+            connection.setConnectTimeout(timeoutMs);
+            connection.setReadTimeout(timeoutMs);
+            connection.setInstanceFollowRedirects(true);
+            connection.setRequestProperty("Range", "bytes=0-0");
+            int status = connection.getResponseCode();
+            String contentType = connection.getContentType();
+            try (var input = connection.getInputStream()) {
+                // Intentionally ignore payload.
+            } catch (IOException ignored) {
+            }
+            connection.disconnect();
+            return new MediaHeadInfo(status, contentType);
+        } catch (IOException e) {
             return null;
         }
     }
@@ -486,6 +636,12 @@ public class MediaManager {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private record CookieStatus(boolean hasEntries, boolean expired) {
+    }
+
+    private record MediaHeadInfo(int statusCode, String contentType) {
     }
 
  

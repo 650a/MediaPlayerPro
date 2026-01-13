@@ -38,17 +38,17 @@ jobs:
         run: |
           mkdir -p dist
           JAR_PATH=$(ls target/*.jar | head -n 1)
-          cp "$JAR_PATH" dist/MediaPlayer.jar
+          cp "$JAR_PATH" dist/MovieTheatreCore.jar
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: MediaPlayer
+          name: MovieTheatreCore
           path: target/*.jar
 
       - name: Publish GitHub release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/MediaPlayer.jar
+          files: dist/MovieTheatreCore.jar
           name: ${{ github.ref_name }}

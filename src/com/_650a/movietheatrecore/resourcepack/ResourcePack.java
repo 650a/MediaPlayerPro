@@ -18,8 +18,8 @@ import org.json.simple.JSONObject;
 
 import com.google.gson.Gson;
 
-import dev.jeka.core.api.file.JkPathTree;
 import com._650a.movietheatrecore.Main;
+import com._650a.movietheatrecore.util.ZipUtil;
 import com._650a.movietheatrecore.video.Video;
 import com._650a.movietheatrecore.video.data.VideoData;
 
@@ -118,7 +118,11 @@ public class ResourcePack {
 		}catch (Exception ex) {
 		    ex.printStackTrace();
 		}
-		JkPathTree.of(resourcePackFolder.toPath()).zipTo(zipFile.toPath());
+		try {
+			ZipUtil.zipDirectory(resourcePackFolder.toPath(), zipFile.toPath());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	/**

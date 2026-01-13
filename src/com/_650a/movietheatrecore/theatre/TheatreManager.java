@@ -156,7 +156,7 @@ public class TheatreManager {
         }
         stopShow(room);
 
-        mediaManager.prepareMediaPlayback(mediaId, false, playback -> {
+        mediaManager.prepareMediaPlayback(mediaId, playback -> {
             AudioZone zone = resolveAudioZone(room, screens);
             ShowInstance show = new ShowInstance(plugin, playbackManager, room, mediaId, zone, () -> activeShows.remove(room.getId()));
             activeShows.put(room.getId(), show);

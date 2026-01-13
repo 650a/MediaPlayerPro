@@ -17,6 +17,7 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.StringUtil;
 
 import com._650a.movietheatrecore.Main;
@@ -65,7 +66,10 @@ public class MovieTheatreCoreCommands implements CommandExecutor, TabCompleter {
         PlaybackManager playbackManager = plugin.getPlaybackManager();
 
         List<String> filteredArgs = new ArrayList<>(Arrays.asList(args));
-        boolean noAudio = filteredArgs.removeIf(arg -> arg.equalsIgnoreCase("--noaudio"));
+        if (filteredArgs.stream().anyMatch(arg -> arg.equalsIgnoreCase("--noaudio"))) {
+            sender.sendMessage(ChatColor.YELLOW + "Audio is fully automatic now. The --noaudio flag has been removed.");
+            return true;
+        }
 
         if (filteredArgs.isEmpty()) {
             sendHelp(sender);
@@ -231,7 +235,7 @@ public class MovieTheatreCoreCommands implements CommandExecutor, TabCompleter {
                     return true;
                 }
                 if (filteredArgs.size() < 3) {
-                    sender.sendMessage(ChatColor.RED + "/mtc play <screen> <source> [--noaudio]");
+                    sender.sendMessage(ChatColor.RED + "/mtc play <screen> <source>");
                     return true;
                 }
                 Screen screen = resolveScreen(screenManager, filteredArgs.get(1));
@@ -244,7 +248,7 @@ public class MovieTheatreCoreCommands implements CommandExecutor, TabCompleter {
                         sender.sendMessage(configuration.insufficient_permissions());
                         return true;
                     }
-                    plugin.getMediaManager().playMedia(sender, screen, filteredArgs.get(3), noAudio);
+                    plugin.getMediaManager().playMedia(sender, screen, filteredArgs.get(3));
                     return true;
                 }
                 if (filteredArgs.size() >= 4 && filteredArgs.get(2).equalsIgnoreCase("url")) {
@@ -252,7 +256,7 @@ public class MovieTheatreCoreCommands implements CommandExecutor, TabCompleter {
                         sender.sendMessage(configuration.insufficient_permissions());
                         return true;
                     }
-                    plugin.getMediaManager().playUrl(sender, screen, filteredArgs.get(3), noAudio);
+                    plugin.getMediaManager().playUrl(sender, screen, filteredArgs.get(3));
                     return true;
                 }
                 Video video = resolveVideo(filteredArgs.get(2));
@@ -260,8 +264,26 @@ public class MovieTheatreCoreCommands implements CommandExecutor, TabCompleter {
                     sender.sendMessage(ChatColor.RED + "Unknown video: " + filteredArgs.get(2));
                     return true;
                 }
-                playbackManager.start(screen, video, new com._650a.movietheatrecore.playback.PlaybackOptions(!noAudio, null, null));
+                playbackManager.start(screen, video, com._650a.movietheatrecore.playback.PlaybackOptions.defaultOptions());
                 sender.sendMessage(ChatColor.GREEN + "Playing " + video.getName() + " on screen " + screen.getName() + ".");
+                return true;
+            }
+            case "admin" -> {
+                if (!PermissionUtil.hasPermission(sender, "movietheatrecore.admin")) {
+                    sender.sendMessage(configuration.insufficient_permissions());
+                    return true;
+                }
+                if (!(sender instanceof Player player)) {
+                    sender.sendMessage(ChatColor.RED + "Only players can receive the admin tool.");
+                    return true;
+                }
+                ItemStack tool = new com._650a.movietheatrecore.items.ItemStacks().adminTool();
+                java.util.Map<Integer, ItemStack> leftover = player.getInventory().addItem(tool);
+                if (!leftover.isEmpty()) {
+                    sender.sendMessage(ChatColor.RED + "Your inventory is full. Clear a slot and try again.");
+                    return true;
+                }
+                sender.sendMessage(ChatColor.GREEN + "MovieTheatreCore admin tool added to your inventory.");
                 return true;
             }
             case "diagnose" -> {
@@ -651,7 +673,7 @@ public class MovieTheatreCoreCommands implements CommandExecutor, TabCompleter {
         List<String> completions = new ArrayList<>();
         try {
             if (args.length == 1) {
-                List<String> candidates = List.of("screen", "media", "play", "stop", "pause", "resume", "scale", "reload", "diagnose", "update", "pack", "deps", "theatre");
+                List<String> candidates = List.of("screen", "media", "play", "stop", "pause", "resume", "scale", "reload", "diagnose", "update", "pack", "deps", "theatre", "admin");
                 StringUtil.copyPartialMatches(args[0], candidates, completions);
             } else if (args.length == 2 && args[0].equalsIgnoreCase("screen")) {
                 List<String> candidates = List.of("create", "delete", "list");
@@ -744,8 +766,8 @@ public class MovieTheatreCoreCommands implements CommandExecutor, TabCompleter {
         sender.sendMessage(ChatColor.YELLOW + "/mtc media remove <name>");
         sender.sendMessage(ChatColor.YELLOW + "/mtc media list");
         sender.sendMessage(ChatColor.YELLOW + "/mtc play <screen> <source>");
-        sender.sendMessage(ChatColor.YELLOW + "/mtc play <screen> media <name> [--noaudio]");
-        sender.sendMessage(ChatColor.YELLOW + "/mtc play <screen> url <url> [--noaudio]");
+        sender.sendMessage(ChatColor.YELLOW + "/mtc play <screen> media <name>");
+        sender.sendMessage(ChatColor.YELLOW + "/mtc play <screen> url <url>");
         sender.sendMessage(ChatColor.YELLOW + "/mtc stop <screen>");
         sender.sendMessage(ChatColor.YELLOW + "/mtc pause <screen>");
         sender.sendMessage(ChatColor.YELLOW + "/mtc resume <screen>");
@@ -758,6 +780,7 @@ public class MovieTheatreCoreCommands implements CommandExecutor, TabCompleter {
         sender.sendMessage(ChatColor.YELLOW + "/mtc pack url");
         sender.sendMessage(ChatColor.YELLOW + "/mtc deps status");
         sender.sendMessage(ChatColor.YELLOW + "/mtc deps reinstall");
+        sender.sendMessage(ChatColor.YELLOW + "/mtc admin");
         sender.sendMessage(ChatColor.YELLOW + "/mtc theatre room create <name> [screen...]");
         sender.sendMessage(ChatColor.YELLOW + "/mtc theatre room delete <name>");
         sender.sendMessage(ChatColor.YELLOW + "/mtc theatre schedule add <room> <HH:MM> <mediaId> [repeat=daily|weekly|none]");
