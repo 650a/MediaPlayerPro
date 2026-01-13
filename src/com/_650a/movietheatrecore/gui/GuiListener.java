@@ -229,6 +229,9 @@ public class GuiListener implements Listener {
         if (action == null || screenId == null) {
             return;
         }
+        if (!(event.getWhoClicked() instanceof Player player)) {
+            return;
+        }
         Screen screen;
         try {
             screen = plugin.getScreenManager().getScreen(UUID.fromString(screenId));
@@ -236,7 +239,6 @@ public class GuiListener implements Listener {
             player.sendMessage(ChatColor.RED + "Invalid screen reference.");
             return;
         }
-        Player player = (Player) event.getWhoClicked();
         if (screen == null) {
             player.sendMessage(ChatColor.RED + "Screen no longer exists.");
             return;
@@ -315,9 +317,13 @@ public class GuiListener implements Listener {
                 player.sendMessage(configuration.insufficient_permissions());
                 return;
             }
-            screen.setVideoName(entry.getName());
-            player.sendMessage(ChatColor.GREEN + "Assigned " + entry.getName() + " to " + screen.getName() + ".");
-            player.closeInventory();
+            try {
+                screen.setVideoName(entry.getName());
+                player.sendMessage(ChatColor.GREEN + "Assigned " + entry.getName() + " to " + screen.getName() + ".");
+                player.closeInventory();
+            } catch (Exception e) {
+                player.sendMessage(ChatColor.RED + "Failed to assign media: " + e.getMessage());
+            }
             return;
         }
         player.sendMessage(ChatColor.GRAY + "Media: " + entry.getName() + " (" + entry.getUrl() + ")");
