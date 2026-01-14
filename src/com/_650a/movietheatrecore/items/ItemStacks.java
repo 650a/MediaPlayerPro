@@ -38,6 +38,15 @@ public class ItemStacks {
 	
 	private final Main plugin = Main.getPlugin(Main.class);
 	private final Configuration configuration = new Configuration();
+
+	private void applyGuiFlags(ItemMeta meta) {
+		meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES,
+				ItemFlag.HIDE_ENCHANTS,
+				ItemFlag.HIDE_DESTROYS,
+				ItemFlag.HIDE_PLACED_ON,
+				ItemFlag.HIDE_POTION_EFFECTS,
+				ItemFlag.HIDE_UNBREAKABLE);
+	}
 	
 	/** 
 	* Gets an {@link ItemStack} corresponding to a black-glass icon in a interface {@link Inventory}.
@@ -76,6 +85,7 @@ public class ItemStacks {
 	    
 	    previous_meta.setDisplayName(configuration.item_previous_page_name());
 	    previous_meta.setLore(Arrays.asList(new String[] { configuration.item_previous_page_lore() }));
+	    applyGuiFlags(previous_meta);
 	    previous.setItemMeta(previous_meta);
 	    
 	    return previous;
@@ -100,6 +110,7 @@ public class ItemStacks {
 	    
 	    refresh_meta.setDisplayName(configuration.item_refresh_page_name());
 	    refresh_meta.setLore(Arrays.asList(new String[] { configuration.item_refresh_page_lore() }));
+	    applyGuiFlags(refresh_meta);
 	    refresh.setItemMeta(refresh_meta);
 		
 	    return refresh;
@@ -118,6 +129,7 @@ public class ItemStacks {
 	    
 	    next_meta.setDisplayName(configuration.item_next_page_name());
 	    next_meta.setLore(Arrays.asList(new String[] { configuration.item_next_page_lore() }));
+	    applyGuiFlags(next_meta);
 	    next.setItemMeta(next_meta);
 		
 	    return next;
@@ -136,6 +148,7 @@ public class ItemStacks {
 	    
 	    play_meta.setDisplayName(configuration.item_play_name());
 	    play_meta.setLore(Arrays.asList(new String[] { configuration.item_play_lore() }));
+	    applyGuiFlags(play_meta);
 	    play.setItemMeta(play_meta);
 		
 	    return play;
@@ -156,12 +169,7 @@ public class ItemStacks {
 		ItemMeta meta = tool.getItemMeta();
 		meta.setDisplayName(configuration.item_admin_tool_name());
 		meta.setLore(Arrays.asList(configuration.item_admin_tool_lore()));
-		meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES,
-				ItemFlag.HIDE_ENCHANTS,
-				ItemFlag.HIDE_DESTROYS,
-				ItemFlag.HIDE_PLACED_ON,
-				ItemFlag.HIDE_POTION_EFFECTS,
-				ItemFlag.HIDE_UNBREAKABLE);
+		applyGuiFlags(meta);
 		if (player != null) {
 			meta.getPersistentDataContainer().set(adminToolOwnerKey(), PersistentDataType.STRING, player.getUniqueId().toString());
 		}
@@ -230,6 +238,7 @@ public class ItemStacks {
 	    
 	    switcher_meta.setDisplayName(configuration.item_switcher_name());
 	    switcher_meta.setLore(Arrays.asList(new String[] { configuration.item_switcher_lore() }));
+	    applyGuiFlags(switcher_meta);
 	    switcher.setItemMeta(switcher_meta);
 		
 	    return switcher;
@@ -254,6 +263,7 @@ public class ItemStacks {
 	    
 	    remote_meta.setDisplayName(configuration.item_remote_name());
 	    remote_meta.setLore(Arrays.asList(new String[] { configuration.item_remote_lore() }));
+	    applyGuiFlags(remote_meta);
 	    remote.setItemMeta(remote_meta);
 		
 	    return remote;
@@ -278,6 +288,7 @@ public class ItemStacks {
 	    
 	    load_meta.setDisplayName(configuration.item_load_name());
 	    load_meta.setLore(Arrays.asList(new String[] { configuration.item_load_lore() }));
+	    applyGuiFlags(load_meta);
 	    load.setItemMeta(load_meta);
 		
 	    return load;
@@ -296,6 +307,7 @@ public class ItemStacks {
 	    
 	    teleport_meta.setDisplayName(configuration.item_teleport_name());
 	    teleport_meta.setLore(Arrays.asList(new String[] { configuration.item_teleport_lore() }));
+	    applyGuiFlags(teleport_meta);
 	    teleport.setItemMeta(teleport_meta);
 		
 	    return teleport;
@@ -314,6 +326,7 @@ public class ItemStacks {
 	    
 	    delete_meta.setDisplayName(configuration.item_delete_name());
 	    delete_meta.setLore(Arrays.asList(new String[] { configuration.item_delete_lore_1(), configuration.item_delete_lore_2() }));
+	    applyGuiFlags(delete_meta);
 	    delete.setItemMeta(delete_meta);
 		
 	    return delete;
@@ -332,6 +345,7 @@ public class ItemStacks {
 	    
 	    remove_meta.setDisplayName(configuration.item_remove_name());
 	    remove_meta.setLore(Arrays.asList(new String[] { configuration.item_remove_lore_1(), configuration.item_remove_lore_2() }));
+	    applyGuiFlags(remove_meta);
 	    remove.setItemMeta(remove_meta);
 		
 	    return remove;
@@ -354,6 +368,7 @@ public class ItemStacks {
 	    poster_meta.setDisplayName(ChatColor.GOLD + "" + ChatColor.BOLD + image.getName());
 	    poster_meta.setLore(Arrays.asList(new String[] { configuration.item_poster_lore_1(), configuration.item_poster_lore_2(), "", configuration.item_poster_lore_3(),
 	    		configuration.item_poster_lore_4(), "", ChatColor.GRAY + "Dimension: " + image.getWidth() + " x " + image.getHeight() }));
+	    applyGuiFlags(poster_meta);
 	    
 	    if(!plugin.isOld()) poster_meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
 	    if(!plugin.isOld()) poster_meta.addItemFlags(ItemFlag.HIDE_POTION_EFFECTS);

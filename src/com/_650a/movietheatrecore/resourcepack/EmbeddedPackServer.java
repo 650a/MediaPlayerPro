@@ -109,19 +109,7 @@ public class EmbeddedPackServer {
     }
 
     private String resolvePublicBaseUrl() {
-        String override = normalizePublicBaseUrl(configuration.resourcepack_server_public_url());
-        if (override != null) {
-            return override;
-        }
-        override = normalizePublicBaseUrl(configuration.pack_public_base_url());
-        if (override != null) {
-            return override;
-        }
-        override = normalizePublicBaseUrl(configuration.resourcepack_host_url());
-        if (override != null) {
-            return override;
-        }
-        return null;
+        return normalizePublicBaseUrl(configuration.resolveResourcePackBaseUrl());
     }
 
     private String trimTrailingSlash(String value) {

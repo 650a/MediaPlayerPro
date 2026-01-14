@@ -32,15 +32,49 @@ MovieTheatreCore serves a **single rolling resource pack** that includes audio f
   https://your-pack-domain.example/pack.zip
   ```
 
-### Recommended setup (Pterodactyl + reverse proxy)
+### Recommended setup (NGINX + certbot)
 1. Open or proxy the internal pack server port (default `8123`).
-2. Put a reverse proxy (NGINX, Caddy, Traefik, etc.) in front of it.
-3. Ensure the proxy provides HTTPS.
-4. Set the base URL in the config:
-   ```yaml
-   pack:
-     public-base-url: "https://your-pack-domain.example"
-   ```
+2. Put NGINX in front of it and terminate HTTPS.
+3. Install a certificate with certbot.
+4. Set `resource_pack.server.public-url` in the config.
+
+**Example NGINX config**
+```
+server {
+  listen 80;
+  server_name pack.yourdomain.example;
+  location / {
+    return 301 https://$host$request_uri;
+  }
+}
+
+server {
+  listen 443 ssl http2;
+  server_name pack.yourdomain.example;
+
+  ssl_certificate /etc/letsencrypt/live/pack.yourdomain.example/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/pack.yourdomain.example/privkey.pem;
+
+  location /pack.zip {
+    proxy_pass http://127.0.0.1:8123/pack.zip;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  }
+}
+```
+
+**Example certbot command**
+```
+sudo certbot --nginx -d pack.yourdomain.example
+```
+
+**Config keys (required)**
+```yaml
+resource_pack:
+  server:
+    public-url: "https://pack.yourdomain.example/pack.zip"
+  url: ""
+```
 
 > The plugin runs behind NAT in Pterodactyl/Wings. **Do not** use `localhost` or private IPs for the public URL.
 
@@ -51,7 +85,7 @@ MovieTheatreCore serves a **single rolling resource pack** that includes audio f
 1. Create a DNS record (A or CNAME) for a subdomain, e.g.:
    - `pack.yourdomain.example` → your proxy/server IP
 2. Configure HTTPS on that subdomain.
-3. Set `pack.public-base-url` to the **HTTPS** address.
+3. Set `resource_pack.server.public-url` to the **HTTPS** pack URL (`/pack.zip`).
 
 ---
 
@@ -145,16 +179,15 @@ Rules:
 
 Pack URL format (required):
 ```
-{pack.public-base-url}/pack.zip
+https://your-pack-domain.example/pack.zip
 ```
 
 ### Pack URL selection priority
 
-MovieTheatreCore picks the first non-empty URL (never `0.0.0.0`):
+MovieTheatreCore picks the first non-empty URL (never `0.0.0.0` or private IPs):
 
 1. `resource_pack.server.public-url`
-2. `pack.public-base-url`
-3. `resource_pack.url`
+2. `resource_pack.url`
 
 Make sure the selected host serves `/pack.zip` over HTTPS.
 
@@ -226,7 +259,7 @@ curl -I https://your-pack-domain.example/pack.zip
 **Common problems**
 
 - **“Pack URL not configured.”**
-  - Set `pack.public-base-url` to a public HTTPS domain.
+  - Set `resource_pack.server.public-url` to a public HTTPS pack URL.
 
 - **“Pack URL returned HTML.”**
   - You used a share page. Use a direct HTTPS URL to `/pack.zip`.

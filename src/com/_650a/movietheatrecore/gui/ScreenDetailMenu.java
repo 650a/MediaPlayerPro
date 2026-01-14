@@ -8,6 +8,7 @@ import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -54,6 +55,12 @@ public class ScreenDetailMenu {
         ItemMeta meta = item.getItemMeta();
         meta.setDisplayName(name);
         meta.setLore(List.of(ChatColor.GRAY + lore));
+        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES,
+                ItemFlag.HIDE_ENCHANTS,
+                ItemFlag.HIDE_DESTROYS,
+                ItemFlag.HIDE_PLACED_ON,
+                ItemFlag.HIDE_POTION_EFFECTS,
+                ItemFlag.HIDE_UNBREAKABLE);
         meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, action);
         if (screen.getUUID() != null) {
             meta.getPersistentDataContainer().set(screenKey, PersistentDataType.STRING, screen.getUUID().toString());

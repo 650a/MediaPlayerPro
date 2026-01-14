@@ -713,6 +713,31 @@ public class Configuration {
 		return getStringValue("resource_pack.server.public-url", null, "");
 	}
 
+	public String resolveResourcePackUrl() {
+		String candidate = normalizePackUrl(resourcepack_server_public_url());
+		if (candidate == null) {
+			candidate = normalizePackUrl(resourcepack_host_url());
+		}
+		if (candidate == null) {
+			return null;
+		}
+		if (isBlockedPackUrl(candidate)) {
+			if (debug_pack()) {
+				Bukkit.getLogger().warning("[MovieTheatreCore]: Ignoring pack URL pointing at a private or bind address: " + candidate);
+			}
+			return null;
+		}
+		return candidate;
+	}
+
+	public String resolveResourcePackBaseUrl() {
+		String candidate = normalizeBaseUrl(resourcepack_server_public_url());
+		if (candidate == null) {
+			candidate = normalizeBaseUrl(resourcepack_host_url());
+		}
+		return candidate;
+	}
+
 	public boolean debug_render() {
 		return getBooleanValue("debug.render", null, false);
 	}
@@ -723,6 +748,94 @@ public class Configuration {
 
 	public boolean debug_screens() {
 		return getBooleanValue("debug.screens", null, false);
+	}
+
+	private String normalizePackUrl(String value) {
+		if (value == null) {
+			return null;
+		}
+		String trimmed = value.trim();
+		if (trimmed.isEmpty()) {
+			return null;
+		}
+		if (trimmed.endsWith("/pack.zip")) {
+			return trimmed;
+		}
+		if (trimmed.endsWith("/")) {
+			return trimmed + "pack.zip";
+		}
+		return trimmed + "/pack.zip";
+	}
+
+	private String normalizeBaseUrl(String value) {
+		if (value == null) {
+			return null;
+		}
+		String trimmed = value.trim();
+		if (trimmed.isEmpty()) {
+			return null;
+		}
+		if (trimmed.endsWith("/pack.zip")) {
+			trimmed = trimmed.substring(0, trimmed.length() - "/pack.zip".length());
+		}
+		if (trimmed.endsWith("/")) {
+			trimmed = trimmed.substring(0, trimmed.length() - 1);
+		}
+		return trimmed;
+	}
+
+	private boolean isBlockedPackUrl(String packUrl) {
+		try {
+			java.net.URL url = new java.net.URL(packUrl);
+			return isBlockedHost(url.getHost());
+		} catch (Exception ignored) {
+			return packUrl.contains("0.0.0.0");
+		}
+	}
+
+	private boolean isBlockedHost(String host) {
+		if (host == null || host.isBlank()) {
+			return false;
+		}
+		String normalized = host.trim();
+		if ("localhost".equalsIgnoreCase(normalized)) {
+			return true;
+		}
+		if ("0.0.0.0".equals(normalized)) {
+			return true;
+		}
+		if (!normalized.matches("\\d+\\.\\d+\\.\\d+\\.\\d+")) {
+			return false;
+		}
+		String[] parts = normalized.split("\\.");
+		if (parts.length != 4) {
+			return false;
+		}
+		try {
+			int a = Integer.parseInt(parts[0]);
+			int b = Integer.parseInt(parts[1]);
+			if (a == 10) {
+				return true;
+			}
+			if (a == 127) {
+				return true;
+			}
+			if (a == 169 && b == 254) {
+				return true;
+			}
+			if (a == 192 && b == 168) {
+				return true;
+			}
+			if (a == 172 && b >= 16 && b <= 31) {
+				return true;
+			}
+			if (a == 100 && b >= 64 && b <= 127) {
+				return true;
+			}
+			return false;
+		} catch (NumberFormatException ignored) {
+			return false;
+		}
 	}
 
 	public void set_resourcepack_sha1(String sha1) {

@@ -606,7 +606,7 @@ public class Screen {
 	*/
 	
 	public File getContentsFolder() {
-		return new File(configuration.getScreensFolder() + "/" + getUUID() + "/contents/");
+		return new File(getScreenDirectory(), "contents/");
 	}
 	
 	/**
@@ -618,7 +618,7 @@ public class Screen {
 	*/
 	
 	public File getPartsFolder() {
-		return new File(configuration.getScreensFolder() + "/" + getUUID() + "/parts/");
+		return new File(getScreenDirectory(), "parts/");
 	}
 	
 	/**
@@ -628,7 +628,7 @@ public class Screen {
 	*/
 	
 	public File getThumbnail() {
-		return new File(configuration.getScreensFolder() + "/" + getUUID() + "/thumbnail/", "thumbnail.png");
+		return new File(new File(getScreenDirectory(), "thumbnail/"), "thumbnail.png");
 	}
 	
 	/**
@@ -676,7 +676,12 @@ public class Screen {
 	@SuppressWarnings("unchecked")
 	public int[] getIds() {
 		if(ids != null) return ids;
-		ids = ArrayUtils.toPrimitive(Arrays.stream(((List<Integer>) getConfigFile().getList("screen.ids")).toArray()).map(Object::toString).map(Integer::valueOf).toArray(Integer[]::new));
+		List<Integer> raw = (List<Integer>) getConfigFile().getList("screen.ids");
+		if (raw == null || raw.isEmpty()) {
+			ids = new int[0];
+			return ids;
+		}
+		ids = ArrayUtils.toPrimitive(Arrays.stream(raw.toArray()).map(Object::toString).map(Integer::valueOf).toArray(Integer[]::new));
 		return ids;
 	}
 	
@@ -687,8 +692,17 @@ public class Screen {
 	*/
 	
 	public ArrayList<ItemFrame> getFrames() {		
-		if(!frames.isEmpty()) return frames;		
-		for(int i = 0; i < width*height; i++) frames.add(new Part(new File(getPartsFolder(), i + ".yml")).getItemFrame());		
+		if(!frames.isEmpty()) return frames;
+		ArrayList<Part> parts = getParts();
+		if (!parts.isEmpty()) {
+			for (Part part : parts) {
+				frames.add(part.getItemFrame());
+			}
+			return frames;
+		}
+		if (width > 0 && height > 0) {
+			for(int i = 0; i < width*height; i++) frames.add(new Part(new File(getPartsFolder(), i + ".yml")).getItemFrame());
+		}
 		return frames;
 	}
 	
@@ -700,7 +714,16 @@ public class Screen {
 	
 	public ArrayList<Block> getBlocks() {
 		if(!blocks.isEmpty()) return blocks;
-		for(int i = 0; i < width*height; i++) blocks.add(new Part(new File(getPartsFolder(), i + ".yml")).getBlock());
+		ArrayList<Part> parts = getParts();
+		if (!parts.isEmpty()) {
+			for (Part part : parts) {
+				blocks.add(part.getBlock());
+			}
+			return blocks;
+		}
+		if (width > 0 && height > 0) {
+			for(int i = 0; i < width*height; i++) blocks.add(new Part(new File(getPartsFolder(), i + ".yml")).getBlock());
+		}
 		return blocks;
 	}
 	
@@ -800,6 +823,9 @@ public class Screen {
 	
 	public ArrayList<Content> getContents() {	
 		File[] files = getContentsFolder().listFiles();
+		if (files == null) {
+			return contents;
+		}
 		if(files.length == contents.size()) return contents;
 		contents.clear();
 		for(File file : files) if(!file.isDirectory()) contents.add(new Content(file));
@@ -814,7 +840,18 @@ public class Screen {
 	
 	public ArrayList<Part> getParts() {	
 		if(!parts.isEmpty()) return parts;
-		for(int i = 0; i < width*height; i++) parts.add(new Part(new File(getPartsFolder(), i + ".yml")));
+		if (width > 0 && height > 0) {
+			for(int i = 0; i < width*height; i++) parts.add(new Part(new File(getPartsFolder(), i + ".yml")));
+			return parts;
+		}
+		File[] partFiles = getPartsFolder().listFiles((dir, name) -> name.endsWith(".yml"));
+		if (partFiles == null) {
+			return parts;
+		}
+		Arrays.sort(partFiles, (a, b) -> a.getName().compareToIgnoreCase(b.getName()));
+		for (File partFile : partFiles) {
+			parts.add(new Part(partFile));
+		}
 		return parts;
 	}
 	
@@ -1021,7 +1058,8 @@ public class Screen {
 	*/
 	
 	public void remove() {
-		for (Part part : getParts()) {
+		ArrayList<Part> parts = new ArrayList<>(getParts());
+		for (Part part : parts) {
 			Block block = part.getBlock();
 			if (block != null) {
 				block.setType(Material.AIR);
@@ -1035,18 +1073,21 @@ public class Screen {
 				}
 			}
 		}
-		ArrayList<ItemFrame> frames = getFrames();
+		ArrayList<ItemFrame> frames = new ArrayList<>(getFrames());
 		for (ItemFrame frame : frames) {
 			if (frame != null) {
 				frame.remove();
 			}
 		}
-		ArrayList<Block> blocks = getBlocks();
+		ArrayList<Block> blocks = new ArrayList<>(getBlocks());
 		for (Block block : blocks) {
 			if (block != null) {
 				block.setType(Material.AIR);
 			}
 		}
+		this.parts.clear();
+		this.frames.clear();
+		this.blocks.clear();
 	}
 	
 	/**
@@ -1058,10 +1099,10 @@ public class Screen {
 		plugin.getRegisteredScreens().remove(this);
 		remove();
 		File configFile = getFile();
-		if (configFile == null) {
-			return;
+		File parent = configFile == null ? null : configFile.getParentFile();
+		if (parent == null) {
+			parent = getScreenDirectory();
 		}
-		File parent = configFile.getParentFile();
 		if (parent == null || !parent.exists()) {
 			return;
 		}
@@ -1081,6 +1122,20 @@ public class Screen {
 		} catch (IllegalArgumentException e) {
 			return null;
 		}
+	}
+
+	private File getScreenDirectory() {
+		if (file != null) {
+			File parent = file.getParentFile();
+			if (parent != null) {
+				return parent;
+			}
+		}
+		UUID id = getUUID();
+		if (id != null) {
+			return new File(configuration.getScreensFolder(), id.toString());
+		}
+		return configuration.getScreensFolder();
 	}
 	
 	/**
@@ -1133,7 +1188,13 @@ public class Screen {
 						
 						if(!listeners.contains(player.getUniqueId())) {
 							if(video.isAudioEnabled() && !video.isStreamed() && server != null) {
-								player.setResourcePack(server.url().replaceAll("%name%", video.getName()+".zip"));
+								String packUrl = configuration.resolveResourcePackUrl();
+								if (packUrl != null && !packUrl.isBlank()) {
+									player.setResourcePack(packUrl);
+									if (configuration.debug_pack()) {
+										plugin.getLogger().info("[MovieTheatreCore]: Sent resource pack to " + player.getName() + " url=" + packUrl + ".");
+									}
+								}
 							}
 							listeners.add(player.getUniqueId());
 						}
