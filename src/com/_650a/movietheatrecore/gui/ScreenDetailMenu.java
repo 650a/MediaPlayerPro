@@ -14,16 +14,19 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
 import com._650a.movietheatrecore.Main;
+import com._650a.movietheatrecore.configuration.Configuration;
 import com._650a.movietheatrecore.screen.Screen;
 
 public class ScreenDetailMenu {
 
     private final Main plugin;
     private final Screen screen;
+    private final Configuration configuration;
 
     public ScreenDetailMenu(Main plugin, Screen screen) {
         this.plugin = plugin;
         this.screen = screen;
+        this.configuration = new Configuration();
     }
 
     public void open(Player player) {
@@ -32,17 +35,20 @@ public class ScreenDetailMenu {
 
     public Inventory build() {
         ScreenDetailHolder holder = new ScreenDetailHolder();
-        Inventory inventory = Bukkit.createInventory(holder, 27, ChatColor.DARK_PURPLE + "Screen: " + screen.getName());
+        Inventory inventory = Bukkit.createInventory(holder, 27, configuration.gui_accent_color() + "MTC Screen: " + screen.getName());
         holder.setInventory(inventory);
 
         NamespacedKey screenKey = new NamespacedKey(plugin, "screen-id");
         NamespacedKey actionKey = new NamespacedKey(plugin, "action");
 
-        inventory.setItem(10, actionItem(Material.BOOK, ChatColor.AQUA + "Assign Media",
+        String primary = configuration.gui_primary_color();
+        inventory.setItem(10, actionItem(Material.BOOK, primary + "Assign Media",
                 "assign-media", actionKey, screenKey, "Choose media for this screen."));
-        inventory.setItem(12, actionItem(Material.REDSTONE_TORCH, ChatColor.AQUA + "Playback Controls",
+        inventory.setItem(12, actionItem(Material.REDSTONE_TORCH, primary + "Playback Controls",
                 "playback", actionKey, screenKey, "Play, pause, or stop."));
-        inventory.setItem(14, actionItem(Material.BARRIER, ChatColor.RED + "Delete Screen",
+        inventory.setItem(13, actionItem(Material.NOTE_BLOCK, primary + "Audio Radius",
+                "set-radius", actionKey, screenKey, "Set audio radius in blocks."));
+        inventory.setItem(15, actionItem(Material.BARRIER, ChatColor.RED + "Delete Screen",
                 "delete-screen", actionKey, screenKey, "Remove all frames and data."));
         inventory.setItem(16, actionItem(Material.ARROW, ChatColor.GRAY + "Back",
                 "back", actionKey, screenKey, "Return to screen list."));

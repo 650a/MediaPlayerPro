@@ -72,7 +72,7 @@ public class AudioPackManager {
         String packUrl = resolvePackUrl();
         if (packUrl == null || packUrl.isBlank()) {
             warnMissingPackUrl();
-            return AudioPreparation.error("Resource pack URL not configured. Set resource_pack.server.public-url or resource_pack.url to your HTTPS pack host.", null);
+            return AudioPreparation.error("Resource pack URL not configured. Set pack.public-base-url to your HTTPS pack host.", null);
         }
         if (!configuration.resourcepack_server_enabled()) {
             return AudioPreparation.error("Pack server is disabled. Enable resource_pack.server.enabled to serve pack.zip.", null);
@@ -171,7 +171,7 @@ public class AudioPackManager {
 
     private void warnMissingPackUrl() {
         if (!warnedMissingPackUrl) {
-            plugin.getLogger().warning("[MovieTheatreCore]: Resource pack URL not configured. Set resource_pack.server.public-url or resource_pack.url to your HTTPS host.");
+            plugin.getLogger().warning("[MovieTheatreCore]: Resource pack URL not configured. Set pack.public-base-url to your HTTPS host.");
             warnedMissingPackUrl = true;
         }
     }
@@ -330,7 +330,7 @@ public class AudioPackManager {
         try {
             URL url = new URL(packUrl);
             if (!"https".equalsIgnoreCase(url.getProtocol())) {
-                warnings.add("Pack URL is not HTTPS. Public packs should be served over HTTPS.");
+                errors.add("Pack URL must be HTTPS.");
             }
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setInstanceFollowRedirects(false);

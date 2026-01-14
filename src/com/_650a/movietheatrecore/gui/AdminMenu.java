@@ -12,13 +12,16 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import com._650a.movietheatrecore.Main;
+import com._650a.movietheatrecore.configuration.Configuration;
 
 public class AdminMenu {
 
     private final Main plugin;
+    private final Configuration configuration;
 
     public AdminMenu(Main plugin) {
         this.plugin = plugin;
+        this.configuration = new Configuration();
     }
 
     public void open(Player player) {
@@ -27,13 +30,14 @@ public class AdminMenu {
 
     public Inventory build() {
         AdminMenuHolder holder = new AdminMenuHolder();
-        Inventory inventory = Bukkit.createInventory(holder, 27, ChatColor.DARK_PURPLE + "MovieTheatreCore Admin");
+        Inventory inventory = Bukkit.createInventory(holder, 27, configuration.gui_accent_color() + "MTC Admin");
         holder.setInventory(inventory);
 
-        inventory.setItem(10, menuItem(Material.BOOK, ChatColor.AQUA + "Media", "Browse and manage media entries."));
-        inventory.setItem(12, menuItem(Material.ITEM_FRAME, ChatColor.AQUA + "Screens", "Manage screens and layouts."));
-        inventory.setItem(14, menuItem(Material.REDSTONE_TORCH, ChatColor.AQUA + "Playback", "Control what is playing."));
-        inventory.setItem(16, menuItem(Material.COMPARATOR, ChatColor.AQUA + "Settings", "Reload and view status."));
+        String primary = configuration.gui_primary_color();
+        inventory.setItem(10, menuItem(Material.BOOK, primary + "Media", "Browse and manage media entries."));
+        inventory.setItem(12, menuItem(Material.ITEM_FRAME, primary + "Screens", "Manage screens and layouts."));
+        inventory.setItem(14, menuItem(Material.REDSTONE_TORCH, primary + "Playback", "Control what is playing."));
+        inventory.setItem(16, menuItem(Material.COMPARATOR, primary + "Settings", "Reload and view status."));
 
         return inventory;
     }

@@ -60,16 +60,15 @@ MovieTheatreCore enforces permissions on every command and GUI action:
 4. **Verify dependencies**
    - Run `/mtc deps status` to confirm ffmpeg/ffprobe/yt-dlp/deno.
 
-5. **Configure the public pack URL (required)**
+5. **Configure the public pack URL (required for audio)**
    - Create a pack subdomain (e.g., `pack.yourdomain.example`) with HTTPS.
    - Terminate HTTPS with NGINX + certbot.
    - Set it in `configuration.yml`:
      ```yaml
-     resource_pack:
-       server:
-         public-url: "https://pack.yourdomain.example/pack.zip"
-       url: ""
+     pack:
+       public-base-url: "https://pack.yourdomain.example"
      ```
+   - Use the base HTTPS URL (no trailing slash required). The plugin appends `/pack.zip`.
    - The pack will be served at `https://pack.yourdomain.example/pack.zip`.
    - See [docs/USER_GUIDE.md](docs/USER_GUIDE.md) for the full NGINX + certbot example.
 
@@ -100,16 +99,9 @@ https://pack.yourdomain.example/pack.zip
 Set the public pack URL in `configuration.yml`:
 
 ```yaml
-resource_pack:
-  server:
-    public-url: "https://pack.yourdomain.example/pack.zip"
-  url: ""
+pack:
+  public-base-url: "https://pack.yourdomain.example"
 ```
-
-Pack URL selection priority (first non-empty, never `0.0.0.0` or private IPs):
-
-1. `resource_pack.server.public-url`
-2. `resource_pack.url`
 
 The built-in pack server can still be used internally, but the **public URL must be HTTPS** and reachable by players.
 
@@ -152,7 +144,7 @@ dependencies:
 
 ### Resource pack not downloading
 
-- Confirm `resource_pack.server.public-url` is set to a **public HTTPS** pack URL.
+- Confirm `pack.public-base-url` is set to a **public HTTPS** pack URL.
 - Run `/mtc debug pack` to see pack size, SHA1, and curl test output.
 - Verify the pack URL returns a ZIP:
   ```

@@ -500,6 +500,17 @@ public class Screen {
 		return radius;
 	}
 
+	public void setAudioRadius(int radius) {
+		fileconfiguration = new YamlConfiguration();
+		try {
+			fileconfiguration.load(file);
+			fileconfiguration.set("screen.audio.radius", Math.max(1, radius));
+			fileconfiguration.save(file);
+		} catch (IOException | InvalidConfigurationException e) {
+			e.printStackTrace();
+		}
+	}
+
 	public Location getAudioSpeakerLocation() {
 		FileConfiguration config = getConfigFile();
 		if(config.contains("screen.audio.speaker.world")) {
@@ -1097,6 +1108,7 @@ public class Screen {
 	public void delete() {
 		
 		plugin.getRegisteredScreens().remove(this);
+		clearMapRenderers();
 		remove();
 		File configFile = getFile();
 		File parent = configFile == null ? null : configFile.getParentFile();
@@ -1110,6 +1122,22 @@ public class Screen {
 			FileUtils.deleteDirectory(parent);
 		} catch (IOException e) {
 			e.printStackTrace();
+		}
+	}
+
+	private void clearMapRenderers() {
+		int[] mapIds = getIds();
+		if (mapIds == null || mapIds.length == 0) {
+			return;
+		}
+		for (int id : mapIds) {
+			org.bukkit.map.MapView mapView = plugin.getMapUtil().getMapView(id);
+			if (mapView == null) {
+				continue;
+			}
+			for (org.bukkit.map.MapRenderer renderer : mapView.getRenderers()) {
+				mapView.removeRenderer(renderer);
+			}
 		}
 	}
 

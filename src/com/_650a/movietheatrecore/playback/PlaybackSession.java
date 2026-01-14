@@ -22,6 +22,8 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.MapMeta;
 import org.bukkit.scheduler.BukkitTask;
 
 import com._650a.movietheatrecore.Main;
@@ -79,6 +81,7 @@ public class PlaybackSession {
     private long lastSkipLogAt = 0L;
     private long lastFrameLogAt = 0L;
     private int lastLoggedFrame = -1;
+    private long lastScreenDebugAt = 0L;
 
     public PlaybackSession(Main plugin, Screen screen, Video video, PlaybackManager manager, PlaybackOptions options) {
         this.plugin = plugin;
@@ -105,7 +108,15 @@ public class PlaybackSession {
     }
 
     public void setAudioAudienceFilter(java.util.function.Predicate<Player> filter) {
-        this.audioAudienceFilter = filter;
+        if (filter == null) {
+            return;
+        }
+        if (this.audioAudienceFilter == null) {
+            this.audioAudienceFilter = filter;
+            return;
+        }
+        java.util.function.Predicate<Player> existing = this.audioAudienceFilter;
+        this.audioAudienceFilter = player -> existing.test(player) && filter.test(player);
     }
 
     public void start() {
@@ -117,6 +128,7 @@ public class PlaybackSession {
         active = true;
         setupResourcePack();
         ensureScreenMaps();
+        logScreenDebugSnapshot("start");
         lastFrameNanos = System.nanoTime();
 
         tickTask = scheduler.runSyncRepeating(this::tick, 0L, 1L);
@@ -315,6 +327,7 @@ public class PlaybackSession {
                 }
             }
         }
+        logScreenDebugSnapshot("frame");
         if (configuration.debug_render()) {
             long now = System.currentTimeMillis();
             if (now - lastFrameLogAt > 1000L || lastLoggedFrame != frameIndex) {
@@ -336,10 +349,58 @@ public class PlaybackSession {
         }
         for (int i = 0; i < frames.size() && i < ids.length; i++) {
             ItemFrame frame = frames.get(i);
-            if (frame != null && frame.getItem().getType().equals(Material.AIR)) {
+            if (frame == null) {
+                continue;
+            }
+            ItemStack item = frame.getItem();
+            if (plugin.isLegacy()) {
+                frame.setItem(itemStacks.getMap(ids[i]));
+                continue;
+            }
+            boolean needsUpdate = true;
+            if (item != null && item.getType() == Material.FILLED_MAP && item.getItemMeta() instanceof MapMeta meta) {
+                int mapId = plugin.getMapUtil().getMapId(meta.getMapView());
+                needsUpdate = mapId != ids[i];
+            }
+            if (needsUpdate) {
                 frame.setItem(itemStacks.getMap(ids[i]));
             }
         }
+        logScreenDebugSnapshot("maps");
+    }
+
+    private void logScreenDebugSnapshot(String context) {
+        if (!configuration.debug_screens()) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        if (now - lastScreenDebugAt < 5000L) {
+            return;
+        }
+        lastScreenDebugAt = now;
+        int[] ids = screen.getIds();
+        List<ItemFrame> frames = screen.getFrames();
+        int filledMaps = 0;
+        boolean renderersAttached = true;
+        for (int i = 0; i < ids.length; i++) {
+            org.bukkit.map.MapView mapView = plugin.getMapUtil().getMapView(ids[i]);
+            if (mapView == null || mapView.getRenderers().isEmpty()) {
+                renderersAttached = false;
+            }
+        }
+        for (int i = 0; i < frames.size() && i < ids.length; i++) {
+            ItemFrame frame = frames.get(i);
+            if (frame != null && frame.getItem() != null && frame.getItem().getType() == Material.FILLED_MAP) {
+                filledMaps++;
+            }
+        }
+        plugin.getLogger().info("[MovieTheatreCore]: Screen debug (" + context + ") name=" + screen.getName()
+                + " uuid=" + screen.getUUID()
+                + " mapIds=" + java.util.Arrays.toString(ids)
+                + " renderersAttached=" + renderersAttached
+                + " filledMaps=" + filledMaps + "/" + ids.length
+                + " viewers=" + getViewerCount()
+                + " frameIndex=" + frameIndex);
     }
 
     private void updateViewers() {
@@ -464,6 +525,9 @@ public class PlaybackSession {
         packApplied.remove(uuid);
         Player player = Bukkit.getPlayer(uuid);
         if (player != null && options.allowAudio()) {
+            if (manager != null && manager.shouldKeepResourcePack(player)) {
+                return;
+            }
             clearResourcePack(player);
         }
     }
@@ -595,6 +659,10 @@ public class PlaybackSession {
 
     public PlaybackState getState() {
         return state;
+    }
+
+    public boolean isAudioEligibleForListeners() {
+        return options.allowAudio() && video.isAudioEnabled();
     }
 
     private Set<UUID> getAudioListenerSnapshot() {

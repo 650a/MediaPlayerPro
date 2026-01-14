@@ -12,13 +12,16 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import com._650a.movietheatrecore.Main;
+import com._650a.movietheatrecore.configuration.Configuration;
 
 public class AdminSettingsMenu {
 
     private final Main plugin;
+    private final Configuration configuration;
 
     public AdminSettingsMenu(Main plugin) {
         this.plugin = plugin;
+        this.configuration = new Configuration();
     }
 
     public void open(Player player) {
@@ -27,12 +30,13 @@ public class AdminSettingsMenu {
 
     public Inventory build() {
         AdminSettingsHolder holder = new AdminSettingsHolder();
-        Inventory inventory = Bukkit.createInventory(holder, 27, ChatColor.DARK_PURPLE + "MovieTheatreCore Settings");
+        Inventory inventory = Bukkit.createInventory(holder, 27, configuration.gui_accent_color() + "MTC Settings");
         holder.setInventory(inventory);
 
-        inventory.setItem(11, menuItem(Material.REPEATER, ChatColor.GREEN + "Reload plugin", "Reload screens and theatre data."));
-        inventory.setItem(13, menuItem(Material.BOOK, ChatColor.GOLD + "Dependency status", "Show dependency health in chat."));
-        inventory.setItem(15, menuItem(Material.NOTE_BLOCK, ChatColor.AQUA + "Pack status", "Show resource pack status in chat."));
+        String primary = configuration.gui_primary_color();
+        inventory.setItem(11, menuItem(Material.REPEATER, primary + "Reload plugin", "Reload screens and theatre data."));
+        inventory.setItem(13, menuItem(Material.BOOK, primary + "Dependency status", "Show dependency health in chat."));
+        inventory.setItem(15, menuItem(Material.NOTE_BLOCK, primary + "Pack status", "Show resource pack status in chat."));
 
         return inventory;
     }

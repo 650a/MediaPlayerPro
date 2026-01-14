@@ -36,7 +36,7 @@ MovieTheatreCore serves a **single rolling resource pack** that includes audio f
 1. Open or proxy the internal pack server port (default `8123`).
 2. Put NGINX in front of it and terminate HTTPS.
 3. Install a certificate with certbot.
-4. Set `resource_pack.server.public-url` in the config.
+4. Set `pack.public-base-url` in the config.
 
 **Example NGINX config**
 ```
@@ -68,13 +68,13 @@ server {
 sudo certbot --nginx -d pack.yourdomain.example
 ```
 
-**Config keys (required)**
+**Config key (required)**
 ```yaml
-resource_pack:
-  server:
-    public-url: "https://pack.yourdomain.example/pack.zip"
-  url: ""
+pack:
+  public-base-url: "https://pack.yourdomain.example"
 ```
+
+> Use the base HTTPS URL (no trailing slash required). The plugin appends `/pack.zip`.
 
 > The plugin runs behind NAT in Pterodactyl/Wings. **Do not** use `localhost` or private IPs for the public URL.
 
@@ -85,7 +85,7 @@ resource_pack:
 1. Create a DNS record (A or CNAME) for a subdomain, e.g.:
    - `pack.yourdomain.example` → your proxy/server IP
 2. Configure HTTPS on that subdomain.
-3. Set `resource_pack.server.public-url` to the **HTTPS** pack URL (`/pack.zip`).
+3. Set `pack.public-base-url` to the **HTTPS** pack URL base (it will serve `/pack.zip`).
 
 ---
 
@@ -112,6 +112,7 @@ Supported media sources:
 - **Direct MP4 / WEBM URLs**
 - **MediaFire direct download links** (must point directly to the file)
 - **M3U8 livestreams** (direct playlist URLs)
+- **Local files** (host them over HTTPS and use the direct URL; file paths are not supported)
 
 Examples:
 
@@ -182,13 +183,7 @@ Pack URL format (required):
 https://your-pack-domain.example/pack.zip
 ```
 
-### Pack URL selection priority
-
-MovieTheatreCore picks the first non-empty URL (never `0.0.0.0` or private IPs):
-
-1. `resource_pack.server.public-url`
-2. `resource_pack.url`
-
+Set the base URL in `pack.public-base-url` and the plugin will append `/pack.zip`.
 Make sure the selected host serves `/pack.zip` over HTTPS.
 
 Debug command:
@@ -215,6 +210,8 @@ From the GUI you can:
 - Add media URLs
 - Assign media to screens
 - Play/pause/stop playback
+- Toggle stretch/fill modes
+- Set audio radius
 
 ---
 
@@ -230,7 +227,7 @@ If YouTube blocks playback:
 
 Notes:
 - Cookies expire regularly; re-export as needed.
-- If cookies are missing or expired, MovieTheatreCore will warn you.
+- If cookies are missing or expired, MovieTheatreCore will warn you and fall back to non-cookie mode unless `youtube.require-cookies: true`.
 
 ---
 
@@ -259,13 +256,23 @@ curl -I https://your-pack-domain.example/pack.zip
 **Common problems**
 
 - **“Pack URL not configured.”**
-  - Set `resource_pack.server.public-url` to a public HTTPS pack URL.
+  - Set `pack.public-base-url` to a public HTTPS pack URL base.
 
 - **“Pack URL returned HTML.”**
   - You used a share page. Use a direct HTTPS URL to `/pack.zip`.
 
 - **“Pack failed (DECLINED/FAILED_DOWNLOAD).”**
   - The player declined or could not download the pack. Fix the HTTPS URL and try again.
+
+- **“Pack URL points to 0.0.0.0 / private IP.”**
+  - `0.0.0.0` is a bind address and will never work for clients. Set `pack.public-base-url` to a public HTTPS domain.
+
+- **“502 Bad Gateway” from NGINX**
+  - Ensure the embedded pack server is running (`resource_pack.server.enabled: true`) and NGINX proxies to `http://127.0.0.1:8123/pack.zip`.
+  - Confirm the internal port is reachable from your proxy container/host.
+
+- **SSL / certificate errors**
+  - Make sure the pack host has a valid HTTPS certificate (certbot or your CDN). Clients will reject invalid SSL.
 
 - **“Media is loading. Try again shortly.”**
   - The video is still processing; wait and retry.

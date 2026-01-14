@@ -409,14 +409,20 @@ public class MediaManager {
             boolean cookiesUsed = false;
             if (cookiesFile != null && cookiesFile.exists() && cookiesFile.canRead()) {
                 cookieStatus = evaluateCookies(cookiesFile);
-                if (cookieStatus.expired) {
-                    scheduler.runSync(() -> sender.sendMessage(ChatColor.YELLOW + "YouTube cookies appear expired. Export a fresh youtube-cookies.txt before playback fails."));
-                } else if (!cookieStatus.hasEntries) {
-                    scheduler.runSync(() -> sender.sendMessage(ChatColor.YELLOW + "YouTube cookies file is empty. Export a new youtube-cookies.txt if playback fails."));
+                boolean usableCookies = cookieStatus.hasEntries && !cookieStatus.expired;
+                if (!usableCookies && configuration.youtube_require_cookies()) {
+                    scheduler.runSync(() -> sender.sendMessage(ChatColor.RED + "YouTube cookies are required, but the cookies file is empty or expired. Export a new youtube-cookies.txt."));
+                    lastResolverExitCode = null;
+                    lastResolverError = "cookies required but invalid";
+                    return null;
                 }
-                command.add("--cookies");
-                command.add(cookiesFile.getAbsolutePath());
-                cookiesUsed = true;
+                if (!usableCookies) {
+                    scheduler.runSync(() -> sender.sendMessage(ChatColor.YELLOW + "YouTube cookies appear expired or empty. Falling back to non-cookie mode."));
+                } else {
+                    command.add("--cookies");
+                    command.add(cookiesFile.getAbsolutePath());
+                    cookiesUsed = true;
+                }
             } else if (configuration.youtube_require_cookies()) {
                 String path = cookiesFile == null ? "youtube-cookies.txt" : cookiesFile.getPath();
                 scheduler.runSync(() -> sender.sendMessage(ChatColor.RED + "Cookies file required but missing/unreadable: " + path));
