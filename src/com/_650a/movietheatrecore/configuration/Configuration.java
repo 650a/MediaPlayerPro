@@ -137,6 +137,9 @@ public class Configuration {
 			fileconfiguration.set("theatre.default-zone-radius", 16);
 			fileconfiguration.set("theatre.schedule-check-interval-seconds", 30);
 
+			fileconfiguration.set("gui.colors.primary", "&b");
+			fileconfiguration.set("gui.colors.accent", "&d");
+
 			fileconfiguration.set("pack.public-base-url", "");
 			fileconfiguration.set("resource_pack.url", "");
 			fileconfiguration.set("resource_pack.sha1", "");
@@ -681,6 +684,14 @@ public class Configuration {
 		return value;
 	}
 
+	public String gui_primary_color() {
+		return getMessage(getStringValue("gui.colors.primary", null, "&b"));
+	}
+
+	public String gui_accent_color() {
+		return getMessage(getStringValue("gui.colors.accent", null, "&d"));
+	}
+
 	public String resourcepack_host_url() {
 		return getStringValue("resource_pack.url", "resourcepack.host-url", "");
 	}
@@ -714,28 +725,15 @@ public class Configuration {
 	}
 
 	public String resolveResourcePackUrl() {
-		String candidate = normalizePackUrl(resourcepack_server_public_url());
-		if (candidate == null) {
-			candidate = normalizePackUrl(resourcepack_host_url());
-		}
-		if (candidate == null) {
+		String base = normalizePublicBaseUrl(pack_public_base_url());
+		if (base == null) {
 			return null;
 		}
-		if (isBlockedPackUrl(candidate)) {
-			if (debug_pack()) {
-				Bukkit.getLogger().warning("[MovieTheatreCore]: Ignoring pack URL pointing at a private or bind address: " + candidate);
-			}
-			return null;
-		}
-		return candidate;
+		return base + "/pack.zip";
 	}
 
 	public String resolveResourcePackBaseUrl() {
-		String candidate = normalizeBaseUrl(resourcepack_server_public_url());
-		if (candidate == null) {
-			candidate = normalizeBaseUrl(resourcepack_host_url());
-		}
-		return candidate;
+		return normalizePublicBaseUrl(pack_public_base_url());
 	}
 
 	public boolean debug_render() {
@@ -750,24 +748,7 @@ public class Configuration {
 		return getBooleanValue("debug.screens", null, false);
 	}
 
-	private String normalizePackUrl(String value) {
-		if (value == null) {
-			return null;
-		}
-		String trimmed = value.trim();
-		if (trimmed.isEmpty()) {
-			return null;
-		}
-		if (trimmed.endsWith("/pack.zip")) {
-			return trimmed;
-		}
-		if (trimmed.endsWith("/")) {
-			return trimmed + "pack.zip";
-		}
-		return trimmed + "/pack.zip";
-	}
-
-	private String normalizeBaseUrl(String value) {
+	private String normalizePublicBaseUrl(String value) {
 		if (value == null) {
 			return null;
 		}
@@ -781,16 +762,18 @@ public class Configuration {
 		if (trimmed.endsWith("/")) {
 			trimmed = trimmed.substring(0, trimmed.length() - 1);
 		}
-		return trimmed;
-	}
-
-	private boolean isBlockedPackUrl(String packUrl) {
 		try {
-			java.net.URL url = new java.net.URL(packUrl);
-			return isBlockedHost(url.getHost());
+			java.net.URL url = new java.net.URL(trimmed);
+			if (!"https".equalsIgnoreCase(url.getProtocol())) {
+				return null;
+			}
+			if (isBlockedHost(url.getHost())) {
+				return null;
+			}
 		} catch (Exception ignored) {
-			return packUrl.contains("0.0.0.0");
+			return null;
 		}
+		return trimmed;
 	}
 
 	private boolean isBlockedHost(String host) {
@@ -836,6 +819,20 @@ public class Configuration {
 		} catch (NumberFormatException ignored) {
 			return false;
 		}
+	}
+
+	public boolean validatePackPublicBaseUrl() {
+		String value = pack_public_base_url();
+		if (value == null || value.isBlank()) {
+			Bukkit.getLogger().warning("[MovieTheatreCore]: pack.public-base-url is not configured; audio packs will be disabled until it is set.");
+			return false;
+		}
+		String normalized = normalizePublicBaseUrl(value);
+		if (normalized == null) {
+			Bukkit.getLogger().warning("[MovieTheatreCore]: pack.public-base-url must be a public HTTPS URL (example: https://pack.example.com). Audio packs will be disabled.");
+			return false;
+		}
+		return true;
 	}
 
 	public void set_resourcepack_sha1(String sha1) {
@@ -968,6 +965,9 @@ public class Configuration {
 		changed |= ensureInt(configuration, "theatre.audience-check-interval", null, 20);
 		changed |= ensureInt(configuration, "theatre.default-zone-radius", null, 16);
 		changed |= ensureInt(configuration, "theatre.schedule-check-interval-seconds", null, 30);
+
+		changed |= ensureString(configuration, "gui.colors.primary", null, "&b");
+		changed |= ensureString(configuration, "gui.colors.accent", null, "&d");
 
 		changed |= ensurePackPublicBaseUrl(configuration);
 		changed |= ensureString(configuration, "resource_pack.url", "resourcepack.host-url", "");

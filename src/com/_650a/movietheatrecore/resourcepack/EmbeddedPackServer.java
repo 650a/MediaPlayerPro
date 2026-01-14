@@ -162,11 +162,13 @@ public class EmbeddedPackServer {
             if (path == null || path.isBlank() || "/".equals(path)) {
                 byte[] response = "MovieTheatreCore pack server".getBytes(java.nio.charset.StandardCharsets.UTF_8);
                 exchange.getResponseHeaders().add("Content-Type", "text/plain");
+                if ("HEAD".equalsIgnoreCase(method)) {
+                    exchange.sendResponseHeaders(200, -1);
+                    return;
+                }
                 exchange.sendResponseHeaders(200, response.length);
-                if (!"HEAD".equalsIgnoreCase(method)) {
-                    try (OutputStream os = exchange.getResponseBody()) {
-                        os.write(response);
-                    }
+                try (OutputStream os = exchange.getResponseBody()) {
+                    os.write(response);
                 }
                 return;
             }
@@ -179,14 +181,16 @@ public class EmbeddedPackServer {
 
             Path targetPath = target.toPath();
             exchange.getResponseHeaders().add("Content-Type", contentType(targetPath));
+            if ("HEAD".equalsIgnoreCase(method)) {
+                exchange.sendResponseHeaders(200, -1);
+                return;
+            }
             exchange.sendResponseHeaders(200, target.length());
-            if (!"HEAD".equalsIgnoreCase(method)) {
-                try (OutputStream os = exchange.getResponseBody(); FileInputStream fis = new FileInputStream(target)) {
-                    byte[] buffer = new byte[8192];
-                    int read;
-                    while ((read = fis.read(buffer)) != -1) {
-                        os.write(buffer, 0, read);
-                    }
+            try (OutputStream os = exchange.getResponseBody(); FileInputStream fis = new FileInputStream(target)) {
+                byte[] buffer = new byte[8192];
+                int read;
+                while ((read = fis.read(buffer)) != -1) {
+                    os.write(buffer, 0, read);
                 }
             }
         }

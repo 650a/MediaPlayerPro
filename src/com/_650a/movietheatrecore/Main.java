@@ -213,6 +213,7 @@ public class Main extends JavaPlugin implements Listener {
 			configuration = new Configuration();
 			configuration.setup();
 			ensureUserGuideExported();
+			configuration.validatePackPublicBaseUrl();
 
 			dependencyManager = new DependencyManager(this);
 			ffmpeg = new Ffmpeg();

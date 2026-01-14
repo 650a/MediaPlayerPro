@@ -9,19 +9,23 @@ import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
 import com._650a.movietheatrecore.Main;
+import com._650a.movietheatrecore.configuration.Configuration;
 import com._650a.movietheatrecore.screen.Screen;
 
 public class ScreenManagerMenu {
 
     private final Main plugin;
+    private final Configuration configuration;
 
     public ScreenManagerMenu(Main plugin) {
         this.plugin = plugin;
+        this.configuration = new Configuration();
     }
 
     public void open(Player player) {
@@ -30,7 +34,7 @@ public class ScreenManagerMenu {
 
     public Inventory build() {
         ScreenManagerHolder holder = new ScreenManagerHolder();
-        Inventory inventory = Bukkit.createInventory(holder, 54, ChatColor.DARK_PURPLE + "MovieTheatreCore Screens");
+        Inventory inventory = Bukkit.createInventory(holder, 54, configuration.gui_accent_color() + "MTC Screens");
         holder.setInventory(inventory);
 
         NamespacedKey screenKey = new NamespacedKey(plugin, "screen-id");
@@ -42,11 +46,17 @@ public class ScreenManagerMenu {
             }
             ItemStack item = new ItemStack(Material.ITEM_FRAME);
             ItemMeta meta = item.getItemMeta();
-            meta.setDisplayName(ChatColor.AQUA + screen.getName());
+            meta.setDisplayName(configuration.gui_primary_color() + screen.getName());
             List<String> lore = new ArrayList<>();
             lore.add(ChatColor.GRAY + "Size: " + screen.getWidth() + "x" + screen.getHeight());
             lore.add(ChatColor.DARK_GRAY + "Click to manage");
             meta.setLore(lore);
+            meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES,
+                    ItemFlag.HIDE_ENCHANTS,
+                    ItemFlag.HIDE_DESTROYS,
+                    ItemFlag.HIDE_PLACED_ON,
+                    ItemFlag.HIDE_POTION_EFFECTS,
+                    ItemFlag.HIDE_UNBREAKABLE);
             meta.getPersistentDataContainer().set(screenKey, PersistentDataType.STRING, screen.getUUID().toString());
             item.setItemMeta(meta);
             inventory.setItem(slot++, item);

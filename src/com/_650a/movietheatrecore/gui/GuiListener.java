@@ -267,6 +267,13 @@ public class GuiListener implements Listener {
                 }
                 new NowPlayingMenu(plugin, screen).open(player);
             }
+            case "set-radius" -> {
+                if (!PermissionUtil.hasPermission(player, "movietheatrecore.screen.manage")) {
+                    player.sendMessage(configuration.insufficient_permissions());
+                    return;
+                }
+                AdminWizardListener.startRadiusWizard(player, screen);
+            }
             case "back" -> new ScreenListMenu(plugin).open(player);
             default -> {
             }

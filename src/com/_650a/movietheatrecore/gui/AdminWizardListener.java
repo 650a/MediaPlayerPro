@@ -43,6 +43,14 @@ public class AdminWizardListener implements Listener {
         player.sendMessage(ChatColor.GOLD + "Media wizard: enter a media name (or type 'cancel').");
     }
 
+    public static void startRadiusWizard(Player player, Screen screen) {
+        WizardSession session = new WizardSession(WizardType.RADIUS);
+        session.screenId = screen == null ? null : screen.getUUID();
+        sessions.put(player.getUniqueId(), session);
+        player.closeInventory();
+        player.sendMessage(ChatColor.GOLD + "Radius wizard: enter the audio radius in blocks (or type 'cancel').");
+    }
+
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         sessions.remove(event.getPlayer().getUniqueId());
@@ -75,6 +83,10 @@ public class AdminWizardListener implements Listener {
         }
         if (session.type == WizardType.MEDIA) {
             handleMediaWizard(player, session, message);
+            return;
+        }
+        if (session.type == WizardType.RADIUS) {
+            handleRadiusWizard(player, session, message);
         }
     }
 
@@ -161,6 +173,32 @@ public class AdminWizardListener implements Listener {
         }
     }
 
+    private void handleRadiusWizard(Player player, WizardSession session, String message) {
+        if (!PermissionUtil.hasPermission(player, "movietheatrecore.screen.manage")) {
+            player.sendMessage(configuration.insufficient_permissions());
+            sessions.remove(player.getUniqueId());
+            return;
+        }
+        if (session.screenId == null) {
+            player.sendMessage(ChatColor.RED + "Screen no longer exists.");
+            sessions.remove(player.getUniqueId());
+            return;
+        }
+        Screen screen = plugin.getScreenManager().getScreen(session.screenId);
+        if (screen == null) {
+            player.sendMessage(ChatColor.RED + "Screen no longer exists.");
+            sessions.remove(player.getUniqueId());
+            return;
+        }
+        int radius = parsePositiveInt(player, message, "radius");
+        if (radius <= 0) {
+            return;
+        }
+        screen.setAudioRadius(radius);
+        player.sendMessage(ChatColor.GREEN + "Audio radius set to " + radius + " blocks for " + screen.getName() + ".");
+        sessions.remove(player.getUniqueId());
+    }
+
     private int parsePositiveInt(Player player, String value, String label) {
         try {
             int number = Integer.parseInt(value);
@@ -180,6 +218,7 @@ public class AdminWizardListener implements Listener {
         private int step = 0;
         private String name;
         private int width;
+        private UUID screenId;
 
         private WizardSession(WizardType type) {
             this.type = type;
@@ -188,6 +227,7 @@ public class AdminWizardListener implements Listener {
 
     private enum WizardType {
         SCREEN,
-        MEDIA
+        MEDIA,
+        RADIUS
     }
 }

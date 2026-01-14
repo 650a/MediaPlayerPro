@@ -178,7 +178,8 @@ public class ScreenManager {
 
     public Screen getScreenByName(String name) {
         for (Screen screen : screens.values()) {
-            if (screen.getName().equalsIgnoreCase(name)) {
+            String screenName = screen.getName();
+            if (screenName != null && screenName.equalsIgnoreCase(name)) {
                 return screen;
             }
         }

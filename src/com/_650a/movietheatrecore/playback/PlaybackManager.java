@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerResourcePackStatusEvent.Status;
 
@@ -39,6 +40,7 @@ public class PlaybackManager {
         }
 
         PlaybackSession session = new PlaybackSession(plugin, screen, video, this, options);
+        session.setAudioAudienceFilter(player -> isClosestAudioSession(screen, player));
         sessions.put(screen.getUUID(), session);
         screenManager.setState(screen.getUUID(), ScreenState.PLAYING);
         session.start();
@@ -90,5 +92,70 @@ public class PlaybackManager {
         for (PlaybackSession session : sessions.values()) {
             session.handleResourcePackStatus(player, status);
         }
+    }
+
+    public boolean shouldKeepResourcePack(Player player) {
+        if (player == null) {
+            return false;
+        }
+        for (PlaybackSession session : sessions.values()) {
+            if (session == null || !session.isAudioEligibleForListeners()) {
+                continue;
+            }
+            Screen screen = session.getScreen();
+            if (screen == null) {
+                continue;
+            }
+            if (isClosestAudioSession(screen, player)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isClosestAudioSession(Screen screen, Player player) {
+        if (player == null || screen == null) {
+            return false;
+        }
+        Location playerLocation = player.getLocation();
+        if (playerLocation == null) {
+            return false;
+        }
+        double closestDistance = Double.MAX_VALUE;
+        Screen closestScreen = null;
+        for (PlaybackSession session : sessions.values()) {
+            if (session == null || !session.isAudioEligibleForListeners()) {
+                continue;
+            }
+            Screen candidate = session.getScreen();
+            if (candidate == null) {
+                continue;
+            }
+            Location speaker = candidate.getAudioSpeakerLocation();
+            if (speaker == null || speaker.getWorld() == null || !speaker.getWorld().equals(playerLocation.getWorld())) {
+                continue;
+            }
+            int radius = candidate.getAudioRadius();
+            double distance = speaker.distance(playerLocation);
+            if (distance > radius) {
+                continue;
+            }
+            if (distance < closestDistance) {
+                closestDistance = distance;
+                closestScreen = candidate;
+            } else if (distance == closestDistance && closestScreen != null) {
+                String currentId = candidate.getUUID() == null ? "" : candidate.getUUID().toString();
+                String closestId = closestScreen.getUUID() == null ? "" : closestScreen.getUUID().toString();
+                if (currentId.compareToIgnoreCase(closestId) < 0) {
+                    closestScreen = candidate;
+                }
+            }
+        }
+        if (closestScreen == null) {
+            return false;
+        }
+        UUID closestId = closestScreen.getUUID();
+        UUID targetId = screen.getUUID();
+        return closestId != null && closestId.equals(targetId);
     }
 }
