@@ -17,6 +17,7 @@ import javax.imageio.ImageIO;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.ItemFrame;
@@ -76,6 +77,8 @@ public class PlaybackSession {
     private AudioTrack audioTrack;
     private String lastSkipReason;
     private long lastSkipLogAt = 0L;
+    private long lastFrameLogAt = 0L;
+    private int lastLoggedFrame = -1;
 
     public PlaybackSession(Main plugin, Screen screen, Video video, PlaybackManager manager, PlaybackOptions options) {
         this.plugin = plugin;
@@ -113,6 +116,7 @@ public class PlaybackSession {
         state = PlaybackState.PLAYING;
         active = true;
         setupResourcePack();
+        ensureScreenMaps();
         lastFrameNanos = System.nanoTime();
 
         tickTask = scheduler.runSyncRepeating(this::tick, 0L, 1L);
@@ -169,6 +173,9 @@ public class PlaybackSession {
                     clearResourcePack(player);
                 }
             }
+        }
+        if (configuration.debug_render()) {
+            plugin.getLogger().info("[MovieTheatreCore]: Renderer stopped for screen " + screen.getName() + " (video=" + video.getName() + ").");
         }
 
         if (showThumbnail) {
@@ -308,6 +315,31 @@ public class PlaybackSession {
                 }
             }
         }
+        if (configuration.debug_render()) {
+            long now = System.currentTimeMillis();
+            if (now - lastFrameLogAt > 1000L || lastLoggedFrame != frameIndex) {
+                lastFrameLogAt = now;
+                lastLoggedFrame = frameIndex;
+                plugin.getLogger().info("[MovieTheatreCore]: Sent frame " + (frameIndex - 1) + " to " + viewerSnapshot.size() + " viewers (" + buffers.length + " map tiles).");
+            }
+        }
+    }
+
+    private void ensureScreenMaps() {
+        List<ItemFrame> frames = screen.getFrames();
+        int[] ids = screen.getIds();
+        if (frames.isEmpty() || ids.length == 0) {
+            if (configuration.debug_render()) {
+                plugin.getLogger().warning("[MovieTheatreCore]: Screen " + screen.getName() + " is missing frames or map ids; rendering may be skipped.");
+            }
+            return;
+        }
+        for (int i = 0; i < frames.size() && i < ids.length; i++) {
+            ItemFrame frame = frames.get(i);
+            if (frame != null && frame.getItem().getType().equals(Material.AIR)) {
+                frame.setItem(itemStacks.getMap(ids[i]));
+            }
+        }
     }
 
     private void updateViewers() {
@@ -382,10 +414,15 @@ public class PlaybackSession {
                 sendResourcePack(player, audioTrack.getPackUrl(), audioTrack.getPackSha1());
                 markPackPending(player);
             } else if (video.isAudioEnabled() && resourcePackServer != null) {
-                sendResourcePack(player, resourcePackServer.url().replaceAll("%name%", video.getName() + ".zip"), new byte[0]);
-                markPackPending(player);
-                for (int i = 0; i < video.getAudioChannels(); i++) {
-                    player.playSound(player.getLocation(), "movietheatrecore." + i, 10, 1);
+                String packUrl = configuration.resolveResourcePackUrl();
+                if (packUrl != null && !packUrl.isBlank()) {
+                    sendResourcePack(player, packUrl, new byte[0]);
+                    markPackPending(player);
+                    for (int i = 0; i < video.getAudioChannels(); i++) {
+                        player.playSound(player.getLocation(), "movietheatrecore." + i, 10, 1);
+                    }
+                } else if (configuration.debug_pack()) {
+                    plugin.getLogger().warning("[MovieTheatreCore]: Skipping resource pack send for " + player.getName() + " because no public pack URL is configured.");
                 }
             }
         }
@@ -402,6 +439,9 @@ public class PlaybackSession {
         if (status == org.bukkit.event.player.PlayerResourcePackStatusEvent.Status.SUCCESSFULLY_LOADED) {
             packApplied.add(uuid);
             packPending.remove(uuid);
+            if (configuration.debug_pack()) {
+                plugin.getLogger().info("[MovieTheatreCore]: Resource pack loaded for " + player.getName() + ".");
+            }
             startAudioPlaybackIfReady();
             return;
         }
@@ -411,6 +451,9 @@ public class PlaybackSession {
             packPending.remove(uuid);
             packApplied.remove(uuid);
             audioListeners.remove(uuid);
+            if (configuration.debug_pack()) {
+                plugin.getLogger().warning("[MovieTheatreCore]: Resource pack status " + status.name() + " for " + player.getName() + ".");
+            }
             clearResourcePack(player);
             startAudioPlaybackIfReady();
         }
@@ -500,6 +543,9 @@ public class PlaybackSession {
         } catch (NoSuchMethodError error) {
             player.setResourcePack(url);
         }
+        if (configuration.debug_pack()) {
+            plugin.getLogger().info("[MovieTheatreCore]: Sent resource pack to " + player.getName() + " url=" + url + " sha1=" + (sha1 == null ? "none" : sha1.length + " bytes") + ".");
+        }
     }
 
     private void clearResourcePack(Player player) {
@@ -507,12 +553,17 @@ public class PlaybackSession {
             return;
         }
         try {
-            player.setResourcePack("", new byte[0], false);
-        } catch (NoSuchMethodError error) {
-            try {
-                player.setResourcePack("");
-            } catch (Exception ignored) {
-                // Ignore removal failures on legacy versions.
+            java.lang.reflect.Method method = player.getClass().getMethod("removeResourcePack");
+            method.invoke(player);
+            if (configuration.debug_pack()) {
+                plugin.getLogger().info("[MovieTheatreCore]: Removed resource pack for " + player.getName() + ".");
+            }
+            return;
+        } catch (NoSuchMethodException ignored) {
+            // Fall through to legacy safe behavior.
+        } catch (Exception e) {
+            if (configuration.debug_pack()) {
+                plugin.getLogger().warning("[MovieTheatreCore]: Failed to remove resource pack for " + player.getName() + ": " + e.getMessage());
             }
         }
     }

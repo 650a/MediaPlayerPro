@@ -927,7 +927,7 @@ public class MovieTheatreCoreCommands implements CommandExecutor, TabCompleter {
         boolean running = server.isRunning();
         String bind = configuration.resourcepack_server_bind() + ":" + configuration.resourcepack_server_port();
         String serverPublic = configuration.resourcepack_server_public_url();
-        String publicUrl = configuration.pack_public_base_url();
+        String legacyUrl = configuration.resourcepack_host_url();
         String packUrl = packManager.getPackUrl();
         String sha1 = packManager.getPackSha1();
         long lastBuild = packManager.getLastBuildMillis();
@@ -937,7 +937,7 @@ public class MovieTheatreCoreCommands implements CommandExecutor, TabCompleter {
         sender.sendMessage(ChatColor.GRAY + "Server running: " + yesNo(running));
         sender.sendMessage(ChatColor.GRAY + "Bind: " + bind);
         sender.sendMessage(ChatColor.GRAY + "Server public URL: " + (serverPublic == null || serverPublic.isBlank() ? "not set" : serverPublic));
-        sender.sendMessage(ChatColor.GRAY + "Public base URL: " + (publicUrl == null || publicUrl.isBlank() ? "not set" : publicUrl));
+        sender.sendMessage(ChatColor.GRAY + "Legacy pack URL: " + (legacyUrl == null || legacyUrl.isBlank() ? "not set" : legacyUrl));
         sender.sendMessage(ChatColor.GRAY + "Pack URL: " + (packUrl == null ? "n/a" : packUrl));
         sender.sendMessage(ChatColor.GRAY + "Pack SHA1: " + (sha1 == null || sha1.isBlank() ? "n/a" : sha1));
         sender.sendMessage(ChatColor.GRAY + "Last build: " + formatTimestamp(lastBuild));
@@ -955,7 +955,7 @@ public class MovieTheatreCoreCommands implements CommandExecutor, TabCompleter {
         String url = packManager.getPackUrl();
         String sha1 = packManager.getPackSha1();
         if (url == null || url.isBlank()) {
-            sender.sendMessage(ChatColor.RED + "Pack URL not configured. Set resource_pack.server.public-url or pack.public-base-url to your HTTPS host.");
+            sender.sendMessage(ChatColor.RED + "Pack URL not configured. Set resource_pack.server.public-url or resource_pack.url to your HTTPS host.");
             return;
         }
         sender.sendMessage(ChatColor.GREEN + "Pack URL: " + url);

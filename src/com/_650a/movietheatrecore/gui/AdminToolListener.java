@@ -1,6 +1,7 @@
 package com._650a.movietheatrecore.gui;
 
 import org.bukkit.ChatColor;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -27,6 +28,13 @@ public class AdminToolListener implements Listener {
     public AdminToolListener(Main plugin) {
         this.plugin = plugin;
         this.configuration = new Configuration();
+        Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                if (!PermissionUtil.hasPermission(player, "movietheatrecore.admin")) {
+                    removeAdminTool(player);
+                }
+            }
+        }, 40L, 200L);
     }
 
     @EventHandler
