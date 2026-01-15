@@ -27,6 +27,7 @@ MovieTheatreCore is distributed only through official marketplace listings. Inst
 - Screen, media, and playback management from a single command surface.
 - Automatic, offline-friendly dependency installer for ffmpeg/ffprobe/yt-dlp/deno.
 - Automatic resource pack generation with a single rolling pack for all media (audio only).
+- ProtocolLib is optional; MovieTheatreCore compiles and runs without bundling it.
 - Compatible with Minecraft 1.8.8 (Java 17) through the latest releases.
 
 ## Permissions

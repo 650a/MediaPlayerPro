@@ -32,8 +32,8 @@
       <url>https://ci.mg-dev.eu/plugin/repository/everything/</url>
     </repository>
     <repository>
-      <id>dmulloy2-repo</id>
-      <url>https://repo.dmulloy2.net/repository/public/</url>
+      <id>codemc-public</id>
+      <url>https://repo.codemc.org/repository/maven-public/</url>
     </repository>
   </repositories>
 
