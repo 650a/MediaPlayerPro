@@ -31,6 +31,14 @@
       <id>mg-dev</id>
       <url>https://ci.mg-dev.eu/plugin/repository/everything/</url>
     </repository>
+    <repository>
+      <id>codemc-public</id>
+      <url>https://repo.codemc.org/repository/maven-public/</url>
+    </repository>
+    <repository>
+      <id>bg-softdeps</id>
+      <url>https://repo.bg-software.com/repository/dependencies/</url>
+    </repository>
   </repositories>
 
   <dependencies>
@@ -83,6 +91,13 @@
       <groupId>org.tukaani</groupId>
       <artifactId>xz</artifactId>
       <version>1.9</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.comphenix.protocol</groupId>
+      <artifactId>ProtocolLib</artifactId>
+      <version>5.4.0</version>
+      <scope>provided</scope>
     </dependency>
 
     <!-- Optional (only if your code imports it). Keep provided so it’s not shaded into your jar. -->
