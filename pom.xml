@@ -35,6 +35,10 @@
       <id>codemc-public</id>
       <url>https://repo.codemc.org/repository/maven-public/</url>
     </repository>
+    <repository>
+      <id>bg-softdeps</id>
+      <url>https://repo.bg-software.com/repository/dependencies/</url>
+    </repository>
   </repositories>
 
   <dependencies>
@@ -92,9 +96,8 @@
     <dependency>
       <groupId>com.comphenix.protocol</groupId>
       <artifactId>ProtocolLib</artifactId>
-      <version>5.2.0</version>
+      <version>5.4.0</version>
       <scope>provided</scope>
-      <optional>true</optional>
     </dependency>
 
     <!-- Optional (only if your code imports it). Keep provided so it’s not shaded into your jar. -->
